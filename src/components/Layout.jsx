@@ -116,6 +116,7 @@ export function TopBar({ section, spinKey, badges, me, onNavigate, onProfile }) 
             return (
               <button
                 key={name}
+                data-tour={`nav-${name}`}
                 onClick={() => onNavigate(name)}
                 aria-current={active ? 'page' : undefined}
                 className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
@@ -167,6 +168,7 @@ export function TabBar({ section, badges, onNavigate }) {
           return (
             <button
               key={name}
+              data-tour={`nav-${name}`}
               onClick={() => onNavigate(name)}
               aria-current={active ? 'page' : undefined}
               className={`relative flex flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] transition ${

@@ -357,7 +357,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                 {room.code}
               </span>
               <button onClick={onCopyInvite} className={`${ghostBtn} flex items-center gap-1.5`}>
-                <CopyIcon width={14} height={14} /> Copier le lien
+                <CopyIcon width={14} height={14} /> QR code et lien
               </button>
               {confirm?.kind !== 'code' && (
                 <button onClick={() => setConfirm({ kind: 'code' })} disabled={disabled} className={ghostBtn}>

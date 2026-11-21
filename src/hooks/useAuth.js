@@ -185,6 +185,12 @@ export function useAuth() {
   }
 
   // patch : { name, color, avatar_path } (une partie suffit). Renvoie un message d'erreur ou null.
+  // Visite guidée terminée (ou passée) : retenu sur le compte, pour tous les appareils
+  async function markTourDone() {
+    if (user?.user_metadata?.tour_done) return
+    await supabase.auth.updateUser({ data: { tour_done: true } })
+  }
+
   async function updateProfile(patch) {
     if (typeof patch.name === 'string') {
       const pseudo = patch.name.trim()
@@ -303,6 +309,7 @@ export function useAuth() {
     resendSignup,
     updatePassword,
     updateProfile,
+    markTourDone,
     setAvatar,
     setArtistAvatar,
     removeAvatar,

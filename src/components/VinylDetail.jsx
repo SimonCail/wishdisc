@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Cover from './Cover'
-import { CloseIcon, ArrowIcon, StarIcon, CheckIcon, PlusIcon, NoteIcon } from './Icons'
+import { CloseIcon, ArrowIcon, StarIcon, CheckIcon, PlusIcon, NoteIcon, GiftIcon } from './Icons'
 import { AvatarStack } from './Avatar'
 import { getDetails, peekDetails, discogsUrl } from '../lib/discogs'
 import { colorFor } from '../lib/palette'
 import StoreLinks from './StoreLinks'
+import { ENVIE } from '../lib/envie'
+import { btn } from '../lib/ui'
 
 function PlayIcon(p) {
   return (
@@ -96,7 +98,15 @@ const sinceLabel = (iso) =>
 export default function VinylDetail({
   vinyl, mode, inRoom, canAdd,
   onSync, onClose, onPriority, onGotIt, onNote, onMeToo,
+  gifts = [], onReserve, onCancelGift,
 }) {
+  // « Je l'offre » : une ligne par proche qui veut ce disque
+  const [giftBusy, setGiftBusy] = useState(null)
+  async function gift(row, reserve) {
+    setGiftBusy(row.vinylId)
+    await (reserve ? onReserve(row) : onCancelGift(row))
+    setGiftBusy(null)
+  }
   // Ce qu'on a déjà en cache s'affiche tout de suite ; la version à jour arrive derrière
   const [details, setDetails] = useState(() => peekDetails(vinyl)?.data ?? null)
   const [fresh, setFresh] = useState(() => !!peekDetails(vinyl)?.fresh)
@@ -237,23 +247,52 @@ export default function VinylDetail({
               </div>
             </div>
 
+            {/* Niveau d'envie : 3 choix nommés (toucher le choix actif l'enlève) */}
+            {mine && mode === 'wish' && (
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">Mon envie</p>
+                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Mon envie">
+                  {[1, 2, 3].map((n) => {
+                    const on = vinyl.priority === n
+                    return (
+                      <button
+                        key={n}
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => onPriority?.(on ? 0 : n)}
+                        className={`flex flex-col items-center gap-1 rounded-2xl border px-1 py-2.5 transition ${
+                          on ? 'border-accent bg-accent/10 font-bold text-paper' : 'border-line text-muted hover:border-accent/60 hover:text-paper'
+                        }`}
+                      >
+                        <span className="flex text-accent" aria-hidden="true">
+                          {[1, 2, 3].map((i) => (
+                            <StarIcon key={i} filled={i <= n} width={15} height={15} className={i <= n ? '' : 'text-line'} />
+                          ))}
+                        </span>
+                        <span className="text-xs">{ENVIE[n]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-muted">Tes proches le voient, pour savoir quoi t’offrir en premier.</p>
+              </div>
+            )}
+            {!mine && mode === 'wish' && vinyl.priority > 0 && (
+              <p className="mt-4 flex items-center gap-2 text-sm text-muted">
+                <span className="flex text-accent" aria-hidden="true">
+                  {Array.from({ length: vinyl.priority }).map((_, i) => (
+                    <StarIcon key={i} filled width={15} height={15} />
+                  ))}
+                </span>
+                Envie : <span className="font-bold text-paper">{ENVIE[vinyl.priority]}</span>
+              </p>
+            )}
+
             {/* Actions, comme sur la carte */}
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {mine && mode === 'wish' && (
                 <>
-                  <div className="mr-1 flex items-center rounded-full border border-line bg-surface px-1.5 py-1" role="group" aria-label="Niveau d'envie">
-                    {[1, 2, 3].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => onPriority?.(vinyl.priority === n ? 0 : n)}
-                        aria-label={`Envie ${n} sur 3`}
-                        className={`p-0.5 transition hover:scale-110 ${n <= vinyl.priority ? 'text-accent' : 'text-line hover:text-accent/60'}`}
-                      >
-                        <StarIcon filled={n <= vinyl.priority} width={20} height={20} />
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={onGotIt} className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-bold text-ink transition hover:bg-accent-soft">
+                  <button onClick={onGotIt} className={btn.primary}>
                     <CheckIcon width={16} height={16} /> Je l'ai
                   </button>
                 </>
@@ -264,16 +303,52 @@ export default function VinylDetail({
                 </span>
               )}
               {mine && (
-                <button onClick={onNote} className="flex items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-sm font-medium transition hover:border-accent hover:bg-raised">
+                <button onClick={onNote} className={btn.secondary}>
                   <NoteIcon width={15} height={15} /> {vinyl.note ? 'Modifier la note' : 'Ajouter une note'}
                 </button>
               )}
               {!mine && canAdd && (
-                <button onClick={onMeToo} className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-bold text-ink transition hover:bg-accent-soft">
+                <button onClick={onMeToo} className={btn.primary}>
                   <PlusIcon width={16} height={16} /> {mode === 'wish' ? 'Moi aussi' : 'Je l’ai aussi'}
                 </button>
               )}
             </div>
+
+            {gifts.length > 0 && (
+              <div className="mt-5 rounded-2xl border border-line p-4">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
+                  <GiftIcon width={15} height={15} /> Offrir ce disque
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {gifts.map((row) => (
+                    <li key={row.vinylId} className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm">
+                        Pour <span className="font-bold">{row.owner.name}</span>
+                      </span>
+                      {!row.reservedBy ? (
+                        <button onClick={() => gift(row, true)} disabled={giftBusy === row.vinylId} className={btn.primary}>
+                          <GiftIcon width={16} height={16} /> Je l’offre
+                        </button>
+                      ) : row.mine ? (
+                        <span className="flex items-center gap-1">
+                          <span className="rounded-full bg-accent px-3 py-1.5 text-sm font-bold text-ink">Tu l’offres</span>
+                          <button onClick={() => gift(row, false)} disabled={giftBusy === row.vinylId} className={btn.quiet}>
+                            Annuler
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="keep-day rounded-full bg-sun px-3 py-1.5 text-sm font-bold text-paper">
+                          Réservé par {row.reserverName}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-xs text-muted">
+                  {gifts.map((g) => g.owner.name).join(', ')} ne {gifts.length > 1 ? 'verront' : 'verra'} pas qu’il est réservé : la surprise est gardée.
+                </p>
+              </div>
+            )}
 
             {vinyl.note && (
               <p className="mt-4 border-l-4 pl-3 text-sm italic text-muted" style={{ borderColor: color }}>

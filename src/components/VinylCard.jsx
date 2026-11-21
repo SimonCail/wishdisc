@@ -1,9 +1,10 @@
 import Cover from './Cover'
-import { StarIcon, TrashIcon, NoteIcon, ArrowIcon, CheckIcon, PlusIcon } from './Icons'
+import { StarIcon, TrashIcon, NoteIcon, ArrowIcon, CheckIcon, PlusIcon, GiftIcon } from './Icons'
 import { AvatarStack, namesLabel } from './Avatar'
 import { discogsUrl, prefetchDetails } from '../lib/discogs'
 import { useRef } from 'react'
 import { colorFor } from '../lib/palette'
+import { ENVIE, envieLabel } from '../lib/envie'
 
 // « oct. 2026 »
 const sinceLabel = (iso) =>
@@ -12,13 +13,14 @@ const sinceLabel = (iso) =>
 // vinyl.owners : les membres qui ont ce disque dans le bac affiché
 // vinyl.mine   : le disque est dans MA liste (je peux le modifier)
 export default function VinylCard({
-  vinyl, index, mode, inRoom, meId,
+  vinyl, index, mode, inRoom, meId, gift = null,
   onOpen, onDelete, onPriority, onNote, onGotIt, onMeToo,
 }) {
   const color = colorFor(vinyl)
   // Au survol (après un court instant) ou au toucher, on précharge la fiche
   const hoverTimer = useRef(null)
-  const prefetch = () => prefetchDetails(vinyl)
+  // (le disque de la visite guidée n'existe pas sur Discogs)
+  const prefetch = () => !vinyl.demo && prefetchDetails(vinyl)
   const startHover = () => {
     clearTimeout(hoverTimer.current)
     hoverTimer.current = setTimeout(prefetch, 120)
@@ -27,12 +29,15 @@ export default function VinylCard({
   const owners = vinyl.owners || []
   const shared = inRoom && owners.length > 1
   const editable = vinyl.mine
-  const badge = shared
+  const badge = vinyl.demo
+    ? 'Démo'
+    : shared
     ? mode === 'wish' ? 'Envie commune' : 'En double'
     : vinyl.kind && vinyl.kind !== 'Album' ? vinyl.kind : null
 
   return (
     <li
+      data-tour={vinyl.demo ? 'demo-card' : undefined}
       className="group animate-fade-up"
       style={{ animationDelay: `${Math.min(index, 12) * 45}ms` }}
       onPointerEnter={startHover}
@@ -50,10 +55,20 @@ export default function VinylCard({
 
         <div className="relative overflow-hidden rounded-sm shadow-[0_8px_20px_-10px_rgba(26,22,18,0.6)] ring-1 ring-black/10 transition duration-300 group-hover:-translate-x-1.5 group-hover:-rotate-[1.5deg]">
           <Cover url={vinyl.cover_url} className="aspect-square w-full" />
+          {/* « Je l'offre » : jamais visible par la personne à qui on l'offre */}
+          {gift && (
+            <span
+              className={`keep-day absolute bottom-2 left-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold shadow ${
+                gift === 'mine' ? 'bg-accent text-ink' : 'bg-sun text-paper'
+              }`}
+            >
+              <GiftIcon width={12} height={12} /> {gift === 'mine' ? 'Tu l’offres' : 'Réservé'}
+            </span>
+          )}
           {badge && (
             <span
               className={`absolute left-0 top-2 px-2 py-0.5 font-mono text-[10px] font-medium uppercase ${
-                shared ? 'bg-sun text-paper' : 'bg-ink text-paper'
+                shared || vinyl.demo ? 'bg-sun text-paper' : 'bg-ink text-paper'
               }`}
             >
               {badge}
@@ -63,7 +78,7 @@ export default function VinylCard({
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.() }}
               aria-label="Retirer de ma liste"
-              className="absolute right-2 top-2 rounded-full bg-ink/90 p-1.5 text-paper transition hover:bg-red-500 hover:text-white focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute right-2 top-2 rounded-full bg-ink/90 p-1.5 text-paper transition before:absolute before:-inset-2 before:content-[''] hover:bg-red-500 hover:text-white focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
             >
               <TrashIcon width={16} height={16} />
             </button>
@@ -101,7 +116,8 @@ export default function VinylCard({
                   <button
                     key={n}
                     onClick={() => onPriority?.(vinyl.priority === n ? 0 : n)}
-                    aria-label={`Envie ${n} sur 3`}
+                    aria-label={`Envie : ${ENVIE[n]}`}
+                    title={ENVIE[n]}
                     className={`p-0.5 transition hover:scale-110 active:scale-150 ${
                       n <= vinyl.priority ? 'text-accent' : 'text-line hover:text-accent/60'
                     }`}
@@ -111,7 +127,7 @@ export default function VinylCard({
                 ))}
               </div>
             ) : (
-              <div className="flex text-accent" role="img" aria-label={`Envie ${vinyl.priority} sur 3`}>
+              <div className="flex text-accent" role="img" aria-label={`Envie : ${envieLabel(vinyl.priority)}`} title={envieLabel(vinyl.priority)}>
                 {Array.from({ length: vinyl.priority }).map((_, i) => (
                   <StarIcon key={i} filled width={18} height={18} />
                 ))}

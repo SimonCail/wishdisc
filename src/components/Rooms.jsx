@@ -406,8 +406,8 @@ export function RoomBar({ room, meId, onCopyInvite, onLeave, onManage }) {
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={onCopyInvite}
-          aria-label={`Copier le lien d'invitation (code ${room.code})`}
-          title="Copier le lien d'invitation"
+          aria-label={`Inviter dans le salon (code ${room.code})`}
+          title="Inviter : QR code et lien"
           className="flex items-center gap-2 rounded-full border border-dashed border-accent/60 px-3 py-1 font-mono text-sm font-medium tracking-wider text-accent transition hover:bg-accent/10"
         >
           {room.code} <CopyIcon width={14} height={14} />

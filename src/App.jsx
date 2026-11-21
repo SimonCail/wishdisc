@@ -28,6 +28,10 @@ import AuthDialog from './components/AuthDialog'
 import ProfilePanel from './components/ProfilePanel'
 import BarcodeScanner from './components/BarcodeScanner'
 import DiscogsImport from './components/DiscogsImport'
+import AddSheet, { AddFab } from './components/AddSheet'
+import InviteSheet from './components/InviteSheet'
+import Tour from './components/Tour'
+import { useGifts } from './hooks/useGifts'
 import Toasts from './components/Toasts'
 import InstallBanner from './components/InstallBanner'
 import OfflineBanner from './components/OfflineBanner'
@@ -49,8 +53,9 @@ import { ShareIcon, PlusIcon } from './components/Icons'
 // (price_updated_at sert simplement de date de dernière récupération des infos.)
 const isIncomplete = (v) => !v.price_updated_at || v.cover_url == null
 
+// Bouton « Se connecter » sur le bandeau vert (même forme que les autres boutons de l'app)
 const topBtn =
-  'rounded-md border border-ink/40 px-3.5 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-accent'
+  'inline-flex h-10 items-center rounded-full border border-ink/40 px-4 text-sm font-bold text-ink transition hover:bg-ink hover:text-accent'
 
 // Lien d'invitation : https://…/?salon=K7-4QZ
 const inviteFromUrl = () => new URLSearchParams(window.location.search).get('salon')
@@ -74,12 +79,14 @@ export default function App() {
     if (me?.color) applyAccent(me.color)
   }, [me?.color])
   const { rooms, loaded: roomsLoaded, reload: reloadRooms, requests: roomRequests, ...roomActions } = useRooms(userId)
-  const { toasts, toast } = useToasts()
+  const { toasts, toast, dismiss } = useToasts()
   const online = useOnlineStatus()
   const install = useInstallPrompt()
   const wasOffline = useRef(false)
 
   const [items, setItems] = useState(readCache)
+  // Disques retirés il y a moins de 5 s (on peut encore annuler) : id → { timer, commit }
+  const pendingDeletes = useRef(new Map())
   const [loading, setLoading] = useState(() => readCache().length === 0)
   // Page affichée (voir lib/router.js)
   const { path, navigate } = useRoute()
@@ -91,14 +98,18 @@ export default function App() {
   const [search, setSearch] = useState('')
   // Recherche à lancer dans la barre « Ajouter un disque » (tapée par erreur dans le filtre)
   const [addSeed, setAddSeed] = useState(null)
+  // Panneau « Ajouter un disque » (téléphone) : null = fermé, sinon { seed }
+  const [addSheet, setAddSheet] = useState(null)
   function searchToAdd(text) {
-    setAddSeed({ text, n: Date.now() })
+    const seed = { text, n: Date.now() }
+    // Sur téléphone, la recherche se fait dans le panneau du bouton « + »
+    if (window.matchMedia('(max-width: 767px)').matches) setAddSheet({ seed })
+    else setAddSeed(seed)
     setSearch('')
   }
   const [sort, setSort] = useState('recent')
   const [genre, setGenre] = useState('')
   const [person, setPerson] = useState('')
-  const [deleteTarget, setDeleteTarget] = useState(null)
   const [noteTarget, setNoteTarget] = useState(null)
   const [leaveTarget, setLeaveTarget] = useState(null)
   const [detailKey, setDetailKey] = useState(null)
@@ -114,6 +125,7 @@ export default function App() {
 
   // Espace affiché : 'me', l'id d'un salon, ou 'friend:<id>' (les disques d'un ami)
   const friendsApi = useFriends(userId)
+  const gifts = useGifts(userId)
   const reloadFriends = friendsApi.reload
   const messagesApi = useMessages(userId)
   const friendId = contextId.startsWith('friend:') ? contextId.slice(7) : null
@@ -154,10 +166,26 @@ export default function App() {
       // Hors-ligne : le bandeau explique déjà la situation, on garde la liste en mémoire
       if (navigator.onLine) toast(error.message, 'error')
     } else {
-      setItems(data)
+      // Un disque qu'on vient de retirer (encore annulable) ne doit pas revenir
+      setItems(data.filter((v) => !pendingDeletes.current.has(v.id)))
     }
     setLoading(false)
   }, [userId, toast])
+
+  // On quitte l'app pendant les 5 s d'« Annuler » : le retrait est fait tout de suite
+  useEffect(() => {
+    const flush = (e) => {
+      if (e.type === 'pagehide' || document.visibilityState === 'hidden') {
+        for (const p of pendingDeletes.current.values()) p.commit()
+      }
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', flush)
+    }
+  }, [])
 
   useEffect(() => {
     if (!userId) return
@@ -235,7 +263,7 @@ export default function App() {
 
   // Mémorise la liste pour le mode hors-ligne
   useEffect(() => {
-    if (userId && !loading) writeCache(items)
+    if (userId && !loading) writeCache(items.filter((v) => !v.demo)) // jamais le disque de la visite
   }, [items, loading, userId])
 
   // Message au retour du réseau
@@ -579,23 +607,45 @@ export default function App() {
     toast('Conversation supprimée')
   }
 
-  async function confirmDelete() {
-    if (!ensureOnline()) {
-      setDeleteTarget(null)
-      return
-    }
-    const id = deleteTarget.myItem.id
-    const { error } = await supabase.from('vinyls').delete().eq('id', id)
-    if (error) toast(error.message, 'error')
-    else {
-      setItems((prev) => prev.filter((v) => v.id !== id))
-      toast('Disque retiré de ta liste')
-            // Si c'était le disque de la platine, on revient à l'étiquette classique
-      if (me?.turntable?.mode === 'disc' && me.turntable.key === deleteTarget.key) {
+  // Retirer un disque : tout de suite, avec 5 s pour annuler (pas de fenêtre « Es-tu sûr ? »)
+  const UNDO_MS = 5000
+  function removeVinyl(v) {
+    if (!ensureOnline()) return
+    const item = v.myItem
+    const id = item.id
+    const back = (prev) =>
+      prev.some((x) => x.id === id)
+        ? prev
+        : [...prev, item].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setItems((prev) => prev.filter((x) => x.id !== id))
+    const wasOnTurntable = me?.turntable?.mode === 'disc' && me.turntable.key === v.key
+
+    const commit = async () => {
+      const p = pendingDeletes.current.get(id)
+      if (!p) return
+      clearTimeout(p.timer)
+      pendingDeletes.current.delete(id)
+      const { error } = await supabase.from('vinyls').delete().eq('id', id)
+      if (error) {
+        setItems(back)
+        toast(error.message, 'error')
+      } else if (wasOnTurntable) {
+        // C'était le disque de la platine : on revient à l'étiquette classique
         auth.updateProfile({ turntable: null })
       }
     }
-    setDeleteTarget(null)
+    const undo = () => {
+      const p = pendingDeletes.current.get(id)
+      if (!p) return
+      clearTimeout(p.timer)
+      pendingDeletes.current.delete(id)
+      setItems(back)
+    }
+    pendingDeletes.current.set(id, { timer: setTimeout(commit, UNDO_MS), commit })
+    toast(`« ${v.title} » retiré ${item.status === 'owned' ? 'de ta collection' : 'de tes souhaits'}`, 'success', {
+      duration: UNDO_MS,
+      action: { label: 'Annuler', onClick: undo },
+    })
   }
 
   // --- Salons ---
@@ -694,13 +744,104 @@ export default function App() {
     },
   }
 
-  async function copyInvite() {
-    const ok = await copyToClipboard(inviteUrl(room.code))
-    toast(
-      ok ? "Lien d'invitation copié, envoie-le à qui tu veux" : `Code du salon : ${room.code}`,
-      ok ? 'success' : 'error'
-    )
+  // --- Visite guidée (premier lancement) ---
+  // Proposée une fois aux comptes tout neufs (aucun disque, salon ni ami).
+  // Le disque de démo n'existe que dans l'app : jamais envoyé à la base, jamais gardé en cache.
+  const [tourOpen, setTourOpen] = useState(false)
+  const tourKey = userId ? `wishdisc-tour-${userId}` : null
+  const tourChecked = useRef(null) // le compte déjà vérifié (un autre compte peut se connecter ensuite)
+  useEffect(() => {
+    if (!userId || tourChecked.current === userId) return
+    if (loading || !roomsLoaded || !friendsApi.loaded) return
+    tourChecked.current = userId
+    let seen = !!user?.user_metadata?.tour_done
+    try {
+      seen = seen || localStorage.getItem(tourKey) === '1'
+    } catch {
+      // stockage indisponible : on se fie au compte
+    }
+    const fresh = myItems.length === 0 && rooms.length === 0 && friendsApi.friends.length === 0
+    if (!seen && fresh) setTourOpen(true)
+  }, [userId, loading, roomsLoaded, friendsApi.loaded, friendsApi.friends.length, myItems.length, rooms.length, user, tourKey])
+
+  function showDemoVinyl(on) {
+    setItems((prev) => {
+      const rest = prev.filter((v) => !v.demo)
+      if (!on) return rest
+      setTab('wish')
+      return [
+        {
+          id: 'demo-vinyl',
+          demo: true,
+          owner_id: userId,
+          added_by: me?.name,
+          title: 'Disque de démo',
+          artist: 'Wishdisc',
+          year: 2026,
+          status: 'wish',
+          priority: 2,
+          cover_url: '',
+          discogs_id: -1,
+          discogs_type: 'master',
+          genres: [],
+          styles: [],
+          price_updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        },
+        ...rest,
+      ]
+    })
   }
+
+  function finishTour(action) {
+    setTourOpen(false)
+    try {
+      localStorage.setItem(tourKey, '1')
+    } catch {
+      // pas grave : c'est aussi retenu sur le compte
+    }
+    auth.markTourDone()
+    if (action === 'rooms') navigate(paths.rooms)
+    else {
+      navigate(paths.home)
+      if (action === 'add') {
+        if (window.matchMedia('(max-width: 767px)').matches) setAddSheet({ seed: null })
+        else setTimeout(() => document.getElementById('add-search')?.focus(), 300)
+      }
+    }
+  }
+
+  // --- « Je l'offre » ---
+  // Pour un disque de la liste : une ligne par personne du salon qui le souhaite (pas moi),
+  // avec qui l'a réservé. Dans un salon ou chez un ami, onglet Souhaits seulement.
+  function giftRowsOf(v) {
+    if (!v || tab !== 'wish' || !(room || friend) || gifts.missing || !online) return []
+    // Seulement les personnes de ce salon (ou l'ami dont on regarde la liste) :
+    // pas un ami qui souhaite aussi ce disque mais n'est pas là
+    const here = new Set((v.owners ?? []).map((o) => o.id))
+    return items
+      .filter((it) => it.status === 'wish' && it.owner_id !== userId && !it.demo && itemKey(it) === v.key && here.has(it.owner_id))
+      .map((it) => {
+        const g = gifts.byVinyl.get(String(it.id))
+        return {
+          vinylId: it.id,
+          owner: v.owners?.find((o) => o.id === it.owner_id) ?? people.get(it.owner_id) ?? { name: 'ce proche' },
+          reservedBy: g?.reserved_by ?? null,
+          mine: g?.reserved_by === userId,
+          reserverName: g ? people.get(g.reserved_by)?.name ?? 'quelqu’un' : null,
+        }
+      })
+  }
+  function giftStateOf(v) {
+    const rows = giftRowsOf(v)
+    if (rows.some((r) => r.mine)) return 'mine'
+    if (rows.some((r) => r.reservedBy)) return 'taken'
+    return null
+  }
+
+  // Inviter dans le salon : QR code, code à copier, lien à envoyer
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const copyInvite = () => setInviteOpen(true)
 
   // --- Connexion ---
   async function handleSignIn(email, password) {
@@ -996,7 +1137,7 @@ export default function App() {
           </div>
         </main>
         {authDialog}
-        <Toasts toasts={toasts} />
+        <Toasts toasts={toasts} onDismiss={dismiss} />
       </div>
     )
   }
@@ -1010,11 +1151,11 @@ export default function App() {
       }[tab]
     : {
     wish: room
-      ? ['Aucun souhait dans ce salon', 'Ajoute un disque avec la recherche : il apparaît chez toi et ici.']
-      : ['Ton bac à souhaits est vide', 'Cherche un artiste plus haut pour ajouter ton premier disque.'],
+      ? ['Aucun souhait dans ce salon', 'Ajoute un disque : il apparaît chez toi et ici.']
+      : ['Ton bac à souhaits est vide', 'Ajoute ton premier disque : cherche un artiste ou scanne une pochette.'],
     owned: room
-      ? ['Aucune collection ici pour l’instant', 'Ajoute les disques que tu as déjà avec « Je l’ai » dans la recherche.']
-      : ['Ta collection est vide', 'Ajoute les disques que tu as déjà avec « Je l’ai » dans la recherche.'],
+      ? ['Aucune collection ici pour l’instant', 'Ajoute les disques que tu as déjà avec « Je l’ai ».']
+      : ['Ta collection est vide', 'Ajoute les disques que tu as déjà avec « Je l’ai ».'],
   }[tab]
 
   const gridClass =
@@ -1060,6 +1201,7 @@ export default function App() {
         <Hero
           count={lists.wish.length + lists.owned.length}
           context={context}
+          dense={myItems.length > 0}
           disc={platine}
         />
       )}
@@ -1089,7 +1231,7 @@ export default function App() {
           }
           actions={
             <>
-              <button onClick={copyInvite} className={headerBtn} aria-label={`Copier le lien d'invitation (code ${room.code})`}>
+              <button onClick={copyInvite} className={headerBtn} aria-label={`Inviter dans le salon (code ${room.code})`}>
                 <span className="font-mono tracking-wider">{room.code}</span>
               </button>
               {room.owner_id === userId && (
@@ -1208,7 +1350,9 @@ export default function App() {
         {/* --- Une liste de disques : la mienne, un salon, un ami --- */}
         {isListPage && (
         <>
+        {/* Ordinateur : la barre « Ajouter un disque ». Téléphone : le bouton « + » */}
         {!friend && (
+        <div className="hidden md:block" data-tour="add">
         <SearchPanel
           statusOf={statusOf}
           onAdd={addItem}
@@ -1218,9 +1362,10 @@ export default function App() {
           offline={!online}
           seed={addSeed}
         />
+        </div>
         )}
         {!friend && myItems.length < 10 && !loading && (
-          <p className="-mt-8 text-sm text-muted">
+          <p className="hidden text-sm text-muted md:-mt-8 md:block">
             Déjà un compte Discogs ?{' '}
             <button onClick={() => setImportOpen(true)} className="font-medium text-accent underline-offset-4 hover:underline">
               Importer ta collection et ta wantlist
@@ -1312,6 +1457,15 @@ export default function App() {
               <p className="mt-1 text-sm text-muted">
                 {online ? emptyText[1] : 'Reconnecte-toi une première fois pour charger la liste.'}
               </p>
+              {/* Téléphone : même chose que le bouton « + » */}
+              {!friend && online && (
+                <button
+                  onClick={() => setAddSheet({ seed: null })}
+                  className="mx-auto mt-5 flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-ink transition hover:bg-accent-soft md:hidden"
+                >
+                  <PlusIcon width={16} height={16} /> Ajouter un disque
+                </button>
+              )}
             </div>
           ) : visible.length === 0 ? (
             <div className="py-10 text-center">
@@ -1368,11 +1522,12 @@ export default function App() {
                   inRoom={shared}
                   meId={userId}
                   onOpen={() => setDetailKey(v.key)}
-                  onDelete={() => setDeleteTarget(v)}
+                  onDelete={() => removeVinyl(v)}
                   onPriority={(p) => updateVinyl(v.myItem.id, { priority: p })}
                   onNote={() => setNoteTarget(v)}
                   onGotIt={() => gotIt(v.myItem)}
                   onMeToo={statusOf(v) ? undefined : () => addItem(v, tab)}
+                  gift={giftStateOf(v)}
                 />
               ))}
             </ul>
@@ -1413,6 +1568,15 @@ export default function App() {
           onGotIt={() => gotIt(detailVinyl.myItem)}
           onNote={() => setNoteTarget(detailVinyl)}
           onMeToo={() => addItem(detailVinyl, tab)}
+          gifts={giftRowsOf(detailVinyl)}
+          onReserve={async (row) => {
+            const err = await gifts.reserve(row.vinylId)
+            toast(err || `Réservé : ${row.owner.name} ne le saura pas`, err ? 'error' : 'success')
+          }}
+          onCancelGift={async (row) => {
+            const err = await gifts.cancel(row.vinylId)
+            toast(err || 'Réservation annulée', err ? 'error' : 'success')
+          }}
         />
       )}
       {shareOpen && (
@@ -1466,6 +1630,11 @@ export default function App() {
           onChangeEmail={auth.changeEmail}
           onChangePassword={auth.changePassword}
           onLogout={handleSignOut}
+          onReplayTour={() => {
+            setProfileOpen(false)
+            navigate(paths.home)
+            setTourOpen(true)
+          }}
           onImport={() => {
             setProfileOpen(false)
             setImportOpen(true)
@@ -1474,6 +1643,12 @@ export default function App() {
           onClose={() => setProfileOpen(false)}
           onToast={toast}
         />
+      )}
+      {tourOpen && me && (
+        <Tour me={me} onSection={goSection} onDemoVinyl={showDemoVinyl} onFinish={finishTour} />
+      )}
+      {inviteOpen && room && (
+        <InviteSheet room={room} url={inviteUrl(room.code)} onClose={() => setInviteOpen(false)} onToast={toast} />
       )}
       {roomSettingsOpen && room && room.owner_id === userId && (
         <RoomSettings
@@ -1490,17 +1665,6 @@ export default function App() {
       )}
       {noteTarget && (
         <NoteDialog vinyl={noteTarget} onConfirm={confirmNote} onClose={() => setNoteTarget(null)} />
-      )}
-      {deleteTarget && (
-        <ConfirmDialog
-          title="Retirer ce disque ?"
-          message={`« ${deleteTarget.title} » sera retiré de ${tab === 'wish' ? 'tes souhaits' : 'ta collection'}${
-            deleteTarget.owners.length > 1 ? ' (les autres membres le gardent)' : ''
-          }.`}
-          confirmLabel="Retirer"
-          onConfirm={confirmDelete}
-          onClose={() => setDeleteTarget(null)}
-        />
       )}
       {clearTarget && (
         <ConfirmDialog
@@ -1533,10 +1697,26 @@ export default function App() {
       {authDialog}
 
       {/* Onglets du bas sur téléphone (cachés dans une conversation, qui a sa zone d'écriture) */}
+      {isListPage && !friend && !addSheet && (
+        <AddFab onClick={() => setAddSheet({ seed: null })} disabled={!online} />
+      )}
+      {addSheet && (
+        <AddSheet
+          statusOf={statusOf}
+          onAdd={addItem}
+          onGotIt={(item) => gotIt(myByKey.get(itemKey(item)))}
+          onError={(msg) => toast(msg, 'error')}
+          onScan={() => setScannerOpen(true)}
+          onImport={() => setImportOpen(true)}
+          offline={!online}
+          seed={addSheet.seed}
+          onClose={() => setAddSheet(null)}
+        />
+      )}
       {route.name !== 'chat' && <TabBar section={section} badges={badges} onNavigate={goSection} />}
 
       <div className="toasts-above-tabs">
-        <Toasts toasts={toasts} />
+        <Toasts toasts={toasts} onDismiss={dismiss} />
       </div>
     </div>
   )

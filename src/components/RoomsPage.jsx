@@ -170,6 +170,7 @@ export default function RoomsPage({
             e.preventDefault()
             if (code.trim()) run('join', () => onJoin(code))
           }}
+          data-tour="join"
           className="rounded-2xl border border-line bg-surface p-5"
         >
           <h2 className="font-display text-2xl font-black uppercase">Rejoindre un salon</h2>

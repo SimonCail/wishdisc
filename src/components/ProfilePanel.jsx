@@ -176,7 +176,7 @@ function Expandable({ label, value, open, onToggle, children }) {
 export default function ProfilePanel({
   me, email, myCounts, rooms, myArtists, myDiscs = [], offline, onSetTurntable,
   onSaveProfile, onSetPhoto, onSetArtist, onRemovePhoto, onChangeEmail, onChangePassword,
-  onLogout, onImport, onDeleteAccount, onClose, onToast,
+  onLogout, onImport, onDeleteAccount, onClose, onToast, onReplayTour,
 }) {
   const [name, setName] = useState(me.name)
   const [color, setColor] = useState(me.color)
@@ -575,9 +575,16 @@ export default function ProfilePanel({
 
           {/* Sortie */}
           <div className="flex flex-col gap-3 px-1 pb-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <button onClick={onLogout} className={ghostBtn}>
-              Se déconnecter
-            </button>
+            <span className="flex flex-wrap items-center gap-2">
+              <button onClick={onLogout} className={ghostBtn}>
+                Se déconnecter
+              </button>
+              {onReplayTour && (
+                <button onClick={onReplayTour} className={ghostBtn}>
+                  Revoir la visite
+                </button>
+              )}
+            </span>
             {open !== 'delete' && (
               <button onClick={() => toggle('delete')} className="text-left text-sm text-muted underline-offset-4 hover:text-red-600 hover:underline">
                 Supprimer mon compte

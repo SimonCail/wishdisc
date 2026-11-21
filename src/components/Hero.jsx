@@ -75,7 +75,8 @@ function NowSpinning({ disc }) {
 // En-tête : platine animée + titre affiche. Le texte s'adapte à l'espace affiché.
 // disc : { cover_url, title, artist } du disque choisi dans le profil (sinon étiquette classique).
 // Dans un salon, l'étiquette prend la couleur du salon.
-export default function Hero({ count, context, topRight, compact = false, disc = null }) {
+// dense : sur téléphone, bandeau réduit pour voir ses disques tout de suite (liste déjà remplie)
+export default function Hero({ count, context, topRight, compact = false, dense = false, disc = null }) {
   const isRoom = context?.kind === 'room'
   const isMe = context?.kind === 'me'
   const isFriend = context?.kind === 'friend'
@@ -88,7 +89,9 @@ export default function Hero({ count, context, topRight, compact = false, disc =
     <header className="relative overflow-hidden bg-accent text-ink">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-52 top-1/2 h-[30rem] w-[30rem] -translate-y-1/2 opacity-30 sm:-right-28 sm:h-[38rem] sm:w-[38rem] sm:opacity-100"
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 opacity-30 sm:-right-28 sm:h-[38rem] sm:w-[38rem] sm:opacity-100 ${
+          dense ? '-right-24 h-[17rem] w-[17rem]' : '-right-52 h-[30rem] w-[30rem]'
+        }`}
       >
         <SpinningDisc
           cover={disc?.cover_url}
@@ -121,7 +124,7 @@ export default function Hero({ count, context, topRight, compact = false, disc =
           <div className="h-2" />
         )}
 
-        <div className={compact ? 'pb-20 pt-10 sm:pb-24 sm:pt-16' : 'pb-16 pt-8 sm:pb-28 sm:pt-16'}>
+        <div className={compact ? 'pb-20 pt-10 sm:pb-24 sm:pt-16' : dense ? 'pb-7 pt-3 sm:pb-28 sm:pt-16' : 'pb-16 pt-8 sm:pb-28 sm:pt-16'}>
           {isRoom ? (
             <>
               <p className="animate-fade-up mb-4 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.15em] text-ink/70">
@@ -158,19 +161,30 @@ export default function Hero({ count, context, topRight, compact = false, disc =
             </>
           ) : isMe ? (
             <>
-              <p className="animate-fade-up mb-4 font-mono text-xs uppercase tracking-[0.15em] text-ink/70">
+              <p className={`animate-fade-up font-mono text-xs uppercase tracking-[0.15em] text-ink/70 ${dense ? 'mb-2 sm:mb-4' : 'mb-4'}`}>
                 Ma liste · {context.me.name}
+                {dense && count > 0 && <span className="sm:hidden"> · {count} disque{count > 1 ? 's' : ''}</span>}
               </p>
-              <h1 className="font-display animate-fade-up text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">
+              <h1
+                className={`font-display animate-fade-up font-black uppercase leading-[0.84] xl:text-[clamp(9.5rem,10vw,12.5rem)] ${
+                  dense ? 'text-[2.6rem] sm:text-[clamp(3.5rem,14vw,9.5rem)]' : 'text-[clamp(3.5rem,14vw,9.5rem)]'
+                }`}
+              >
                 Mes
-                <br />
+                {dense ? <span className="sm:hidden"> </span> : null}
+                <br className={dense ? 'hidden sm:block' : undefined} />
                 disques.
               </h1>
-              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>
+              <p
+                className={`animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg ${dense ? 'hidden sm:block' : ''}`}
+                style={{ animationDelay: '120ms' }}
+              >
                 Ce que tu veux, ce que tu as déjà. Ta liste te suit dans tous
                 les salons que tu rejoins.
               </p>
-              <NowSpinning disc={disc} />
+              <div className={dense ? '-mt-2 sm:mt-0' : undefined}>
+                <NowSpinning disc={disc} />
+              </div>
             </>
           ) : (
             <>

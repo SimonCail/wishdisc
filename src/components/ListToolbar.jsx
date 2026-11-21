@@ -57,6 +57,7 @@ const CLOSE_SPEED = 0.5 // ou un geste rapide (px/ms)
 function FilterSheet({ options, sort, onSort, genres, genre, onGenre, people, hasFilters, onReset, onClose }) {
   const [dy, setDy] = useState(0) // de combien le panneau est descendu
   const [closing, setClosing] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const drag = useRef(null)
 
   useEffect(() => {
@@ -79,6 +80,7 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, people, ha
     if (e.target.closest('button')) return // « Tout effacer » reste un bouton
     const now = performance.now()
     drag.current = { startY: e.clientY, lastY: e.clientY, lastT: now, speed: 0 }
+    setDragging(true)
     try {
       e.currentTarget.setPointerCapture(e.pointerId) // le doigt peut sortir de la zone
     } catch {
@@ -98,11 +100,11 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, people, ha
     const d = drag.current
     if (!d) return
     drag.current = null
+    setDragging(false)
     if (dy > CLOSE_DISTANCE || (d.speed > CLOSE_SPEED && dy > 10)) close()
     else setDy(0) // pas assez : il remonte
   }
 
-  const dragging = !!drag.current
   const shift = closing ? '100%' : `${dy}px`
   const fade = closing ? 0 : Math.max(0.15, 1 - dy / 400)
 
@@ -199,19 +201,6 @@ export default function ListToolbar({
   hasFilters, onReset, placeholder = 'Chercher dans la liste',
 }) {
   const [sheet, setSheet] = useState(false)
-  // Téléphone : la recherche dans la liste est repliée en une loupe
-  const [searchOpen, setSearchOpen] = useState(false)
-  const mobileInput = useRef(null)
-  const searchShown = searchOpen || !!search
-  // « Chercher dans mes souhaits » → « Dans mes souhaits » (bouton replié)
-  const shortLabel = placeholder.replace(/^Chercher d/, 'D')
-  useEffect(() => {
-    if (searchOpen) mobileInput.current?.focus()
-  }, [searchOpen])
-  // Recherche vidée ailleurs (ex. envoyée à « Ajouter un disque ») : on replie
-  useEffect(() => {
-    if (!search && document.activeElement !== mobileInput.current) setSearchOpen(false)
-  }, [search])
   // La priorité n'a de sens que pour les souhaits
   const options = SORT_OPTIONS.filter((o) => mode !== 'owned' || o.value !== 'priority')
   const showPeople = members && members.length > 1
@@ -243,78 +232,48 @@ export default function ListToolbar({
     </div>
   )
 
-  const filtersButton = (
-    <button
-      onClick={() => setSheet(true)}
-      aria-label={activeCount ? `Filtres (${activeCount} actifs)` : 'Filtres'}
-      className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition ${
-        activeCount ? 'border-accent bg-accent text-ink' : 'border-line bg-surface text-paper'
-      }`}
-    >
-      <FilterIcon />
-      Filtres
-      {activeCount > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 font-mono text-[11px] font-bold text-accent">
-          {activeCount}
-        </span>
-      )}
-    </button>
-  )
-
   return (
     // Téléphone : toute la barre reste accrochée sous la barre du haut pendant qu'on fait défiler
     <div className="sticky top-16 z-20 -mx-5 mb-6 border-b border-line/60 bg-ink/90 px-5 py-3 backdrop-blur-md sm:static sm:mx-0 sm:mb-8 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
       {/* --- Téléphone --- */}
       <div className="space-y-2.5 sm:hidden">
-        {searchShown ? (
-          // Recherche dans la liste ouverte
-          <div className="flex gap-2">
-            <div className="relative min-w-0 flex-1">
-              <SearchIcon width={18} height={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                ref={mobileInput}
-                value={search}
-                onChange={(e) => onSearch(e.target.value)}
-                placeholder={`${placeholder}…`}
-                aria-label={placeholder}
-                enterKeyHint="search"
-                className="h-11 w-full rounded-full border border-line bg-surface pl-10 pr-4 text-base outline-none transition placeholder:text-muted/70 focus:border-accent"
-              />
-            </div>
-            <button
-              onClick={() => setSheet(true)}
-              aria-label={activeCount ? `Filtres (${activeCount} actifs)` : 'Filtres'}
-              className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition ${
-                activeCount ? 'border-accent bg-accent text-ink' : 'border-line bg-surface text-paper'
-              }`}
-            >
-              <FilterIcon />
-            </button>
-            <button
-              onClick={() => {
-                onSearch('')
-                setSearchOpen(false)
-              }}
-              aria-label="Fermer la recherche dans la liste"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-muted transition hover:text-paper"
-            >
-              <CloseIcon width={16} height={16} />
-            </button>
-          </div>
-        ) : (
-          // Repliée : « Filtres » prend la place libre, la loupe garde la largeur de son texte
-          <div className="flex items-center gap-2">
-            {filtersButton}
-            <button
-              onClick={() => setSearchOpen(true)}
+        {/* Le champ de recherche dans la liste, et le bouton des filtres à côté */}
+        <div className="flex gap-2">
+          <div className="relative min-w-0 flex-1">
+            <SearchIcon width={18} height={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+            <input
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+              placeholder={`${placeholder}…`}
               aria-label={placeholder}
-              className="flex h-11 min-w-0 max-w-[60%] shrink-0 items-center justify-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-medium text-muted transition hover:text-paper"
-            >
-              <SearchIcon width={18} height={18} className="shrink-0" />
-              <span className="truncate">{shortLabel}</span>
-            </button>
+              enterKeyHint="search"
+              className="h-11 w-full rounded-2xl border border-line bg-surface pl-10 pr-10 text-base outline-none transition placeholder:text-muted/70 focus:border-accent"
+            />
+            {search && (
+              <button
+                onClick={() => onSearch('')}
+                aria-label="Effacer"
+                className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:text-paper"
+              >
+                <CloseIcon width={15} height={15} />
+              </button>
+            )}
           </div>
-        )}
+          <button
+            onClick={() => setSheet(true)}
+            aria-label={activeCount ? `Filtres (${activeCount} actifs)` : 'Filtres et tri'}
+            className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition ${
+              activeCount ? 'border-accent bg-accent text-ink' : 'border-line bg-surface text-paper'
+            }`}
+          >
+            <FilterIcon />
+            {activeCount > 0 && (
+              <span className="keep-day absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-coral px-1 font-mono text-[10px] font-bold leading-none text-white">
+                {activeCount}
+              </span>
+            )}
+          </button>
+        </div>
         {genres.length > 0 && (
           <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
             <Chip active={!genre} onClick={() => onGenre('')}>

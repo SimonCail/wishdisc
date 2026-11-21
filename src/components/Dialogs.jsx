@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { btn } from '../lib/ui'
 
 export function Overlay({ children, onClose, wide = false }) {
   return (
@@ -30,7 +31,7 @@ export function ConfirmDialog({ title, message, confirmLabel, onConfirm, onClose
         </button>
         <button
           onClick={onConfirm}
-          className="flex-1 rounded-full bg-red-500 py-2.5 font-bold text-white transition hover:bg-red-400"
+          className={`${btn.danger} flex-1`}
         >
           {confirmLabel}
         </button>
@@ -69,7 +70,7 @@ export function NoteDialog({ vinyl, onConfirm, onClose }) {
           </button>
           <button
             type="submit"
-            className="flex-1 rounded-full bg-accent py-2.5 font-bold text-ink transition hover:bg-accent-soft"
+            className={`${btn.primary} flex-1`}
           >
             Enregistrer
           </button>

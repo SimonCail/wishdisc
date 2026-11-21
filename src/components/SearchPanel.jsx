@@ -9,7 +9,7 @@ const MIN_CHARS = 2
 // statusOf(item) : 'wish' | 'owned' | null selon ma liste perso
 // onAdd(item, status) : ajoute à mes souhaits ou à ma collection
 // onGotIt(item) : un de mes souhaits passe dans ma collection
-function BarcodeIcon(p) {
+export function BarcodeIcon(p) {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8"
       strokeLinecap="round" aria-hidden="true" {...p}>
@@ -20,7 +20,11 @@ function BarcodeIcon(p) {
 }
 
 // seed : { text, n } — lance une recherche venue d'ailleurs (ex. tapée par erreur dans le filtre de la liste)
-export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan, offline, seed }) {
+// embedded : affichée dans le panneau « Ajouter un disque » (téléphone) — curseur dans le champ,
+//   résultats toujours visibles, pas de bouton scanner (le panneau a le sien)
+// idle : ce qu'on affiche sous le champ tant qu'il n'y a pas de résultats
+// onResults(bool) : prévient quand des résultats s'affichent ou disparaissent
+export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan, offline, seed, embedded = false, idle = null, onResults }) {
   const [query, setQuery] = useState('')
   const [artists, setArtists] = useState([])
   const [results, setResults] = useState([])
@@ -89,7 +93,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
     setQuery(text)
     setOpen(true)
     if (text.length >= MIN_CHARS) runSearch(text)
-    rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (!embedded) rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     inputRef.current?.focus({ preventScroll: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed?.n])
@@ -104,9 +108,13 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
   }, [query])
 
   // Clic ou toucher en dehors de la recherche (ou Échap) : on replie les résultats
-  const showResults = searched && open
+  const showResults = searched && (open || embedded)
   useEffect(() => {
-    if (!showResults) return
+    onResults?.(showResults)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showResults])
+  useEffect(() => {
+    if (!showResults || embedded) return
     const onDown = (e) => {
       if (rootRef.current?.contains(e.target)) return
       // Clic dans une fenêtre ou une notification par-dessus : on laisse ouvert
@@ -120,7 +128,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
       document.removeEventListener('pointerdown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [showResults])
+  }, [showResults, embedded])
 
   function handleChange(e) {
     const value = e.target.value
@@ -172,6 +180,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
             value={query}
             onChange={handleChange}
             onFocus={() => setOpen(true)}
+            autoFocus={embedded}
             enterKeyHint="search"
             autoComplete="off"
             disabled={offline}
@@ -199,7 +208,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
             )}
           </div>
         </form>
-        {onScan && (
+        {onScan && !embedded && (
           <button
             type="button"
             onClick={onScan}
@@ -214,8 +223,16 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
         )}
       </div>
 
+      {!showResults && idle}
+
       {showResults && (
-        <div className="animate-pop mt-3 rounded-3xl border border-line bg-surface/90 p-4 backdrop-blur sm:p-5">
+        <div
+          className={
+            embedded
+              ? 'animate-pop mt-4'
+              : 'animate-pop mt-3 rounded-3xl border border-line bg-surface/90 p-4 backdrop-blur sm:p-5'
+          }
+        >
           <div className="mb-4 flex items-center justify-between gap-3">
             {selectedArtist ? (
               <div className="flex min-w-0 items-center gap-3">
@@ -232,12 +249,14 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
             ) : (
               <h2 className="font-display text-lg font-bold">Résultats</h2>
             )}
-            <button
-              onClick={clear}
-              className="shrink-0 text-sm text-muted transition hover:text-paper"
-            >
-              Fermer
-            </button>
+            {!embedded && (
+              <button
+                onClick={clear}
+                className="shrink-0 text-sm text-muted transition hover:text-paper"
+              >
+                Fermer
+              </button>
+            )}
           </div>
 
           {empty && (
@@ -273,7 +292,13 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
                   Albums
                 </p>
               )}
-              <ul className="nice-scroll grid max-h-[26rem] gap-1 overflow-y-auto overflow-x-hidden sm:grid-cols-2 xl:grid-cols-3">
+              <ul
+                className={
+                  embedded
+                    ? 'grid gap-1'
+                    : 'nice-scroll grid max-h-[26rem] gap-1 overflow-y-auto overflow-x-hidden sm:grid-cols-2 xl:grid-cols-3'
+                }
+              >
                 {results.map((item, i) => {
                   const key = itemKey(item)
                   const status = statusOf(item)
