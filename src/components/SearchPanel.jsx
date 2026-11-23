@@ -20,8 +20,9 @@ export function BarcodeIcon(p) {
 }
 
 // seed : { text, n } — lance une recherche venue d'ailleurs (ex. tapée par erreur dans le filtre de la liste)
-// embedded : affichée dans le panneau « Ajouter un disque » (téléphone) — curseur dans le champ,
-//   résultats toujours visibles, pas de bouton scanner (le panneau a le sien)
+// embedded : affichée dans le panneau « Ajouter un disque » (téléphone) — résultats toujours
+//   visibles, pas de bouton scanner (le panneau a le sien). Le clavier ne s'ouvre que si on
+//   touche le champ (sur iPhone, l'ouvrir tout seul cachait le panneau)
 // idle : ce qu'on affiche sous le champ tant qu'il n'y a pas de résultats
 // onResults(bool) : prévient quand des résultats s'affichent ou disparaissent
 export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan, offline, seed, embedded = false, idle = null, onResults }) {
@@ -175,12 +176,11 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
           <PlusIcon width={22} height={22} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-accent" />
           <input
             ref={inputRef}
-            id="add-search"
+            id={embedded ? 'add-search-sheet' : 'add-search'}
             aria-label="Ajouter un disque"
             value={query}
             onChange={handleChange}
             onFocus={() => setOpen(true)}
-            autoFocus={embedded}
             enterKeyHint="search"
             autoComplete="off"
             disabled={offline}

@@ -8,18 +8,31 @@ import { CloseIcon, PlusIcon } from './Icons'
 const CLOSE_DISTANCE = 110 // px à descendre pour fermer
 const CLOSE_SPEED = 0.5 // ou un geste rapide (px/ms)
 
-// Clavier du téléphone ouvert ? (la zone visible de l'écran rapetisse)
-function useKeyboardOpen() {
-  const [open, setOpen] = useState(false)
+// La partie de l'écran vraiment visible (sans le clavier).
+// Sur iPhone, le clavier passe PAR-DESSUS la page et fait glisser l'écran : on cale donc
+// le panneau sur cette zone visible, pour qu'il reste entier au-dessus du clavier.
+function useVisibleArea() {
+  const read = () => {
+    const vv = window.visualViewport
+    if (!vv || !vv.height) return { top: 0, height: window.innerHeight, keyboard: false }
+    return { top: vv.offsetTop, height: vv.height, keyboard: window.innerHeight - vv.height > 120 }
+  }
+  const [area, setArea] = useState(read)
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
-    const check = () => setOpen(window.innerHeight - vv.height > 120)
-    check()
-    vv.addEventListener('resize', check)
-    return () => vv.removeEventListener('resize', check)
+    const update = () => setArea(read())
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
   }, [])
-  return open
+  return area
 }
 
 const ImportIcon = (p) => (
@@ -76,8 +89,8 @@ export default function AddSheet({ statusOf, onAdd, onGotIt, onError, onScan, on
   // Hauteur : celle du contenu, ou presque tout l'écran avec des résultats
   // ou le clavier ouvert (le champ reste ainsi en haut, au-dessus du clavier)
   const [hasResults, setHasResults] = useState(false)
-  const keyboard = useKeyboardOpen()
-  const tall = hasResults || keyboard
+  const area = useVisibleArea()
+  const tall = hasResults || area.keyboard
   const drag = useRef(null)
   const onCloseRef = useRef(onClose)
   useEffect(() => {
@@ -160,7 +173,10 @@ export default function AddSheet({ statusOf, onAdd, onGotIt, onError, onScan, on
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:hidden">
+    <div
+      className="fixed inset-x-0 z-50 flex items-end md:hidden"
+      style={{ top: area.top, height: area.height }}
+    >
       <div
         aria-hidden="true"
         onClick={() => close()}
@@ -172,8 +188,14 @@ export default function AddSheet({ statusOf, onAdd, onGotIt, onError, onScan, on
           role="dialog"
           aria-modal="true"
           aria-label="Ajouter un disque"
-          className={`flex w-full flex-col rounded-t-3xl bg-surface shadow-2xl ${tall ? 'h-[90dvh]' : 'max-h-[90dvh]'}`}
+          className="flex w-full flex-col rounded-t-3xl bg-surface shadow-2xl"
           style={{
+            // Avec le clavier : toute la zone visible (le champ en haut, les résultats juste au-dessus du clavier)
+            ...(area.keyboard
+              ? { height: area.height - 8 }
+              : tall
+                ? { height: Math.round(area.height * 0.9) }
+                : { maxHeight: Math.round(area.height * 0.9) }),
             transform: `translateY(${shift})`,
             transition: dragging ? 'none' : 'transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1)',
           }}
