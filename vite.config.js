@@ -19,6 +19,7 @@ export default defineConfig({
         'pwa-192x192.png',
         'pwa-512x512.png',
         'pwa-maskable-512x512.png',
+        'badge-96.png',
       ],
       manifest: {
         name: 'Wishdisc',
@@ -42,6 +43,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Notifications : réception et clic (public/push-sw.js)
+        importScripts: ['push-sw.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

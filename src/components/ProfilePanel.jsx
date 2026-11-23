@@ -6,6 +6,7 @@ import SpinningDisc from './SpinningDisc'
 import { ThemeSettings } from './ThemePicker'
 import { CloseIcon, CheckIcon } from './Icons'
 import { loadPhoto, exportAvatar } from '../lib/avatar'
+import PushSettings from './PushSettings'
 
 // Couleurs proposées pour l'avatar (celles du site)
 const COLORS = ['#ec5b3e', '#e58a4e', '#f1c04e', '#b9cf5a', '#6fbf98', '#6aa6d6', '#f09aaa']
@@ -522,6 +523,11 @@ export default function ProfilePanel({
           {/* Jour / nuit */}
           <Section title="Apparence">
             <ThemeSettings />
+          </Section>
+
+          {/* Notifications sur ce téléphone */}
+          <Section title="Notifications">
+            <PushSettings onToast={onToast} />
           </Section>
 
           {/* Import */}

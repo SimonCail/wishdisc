@@ -32,6 +32,8 @@ import AddSheet, { AddFab } from './components/AddSheet'
 import InviteSheet from './components/InviteSheet'
 import Tour from './components/Tour'
 import { useGifts } from './hooks/useGifts'
+import { PushPrompt } from './components/PushSettings'
+import { setAppBadge } from './lib/push'
 import Toasts from './components/Toasts'
 import InstallBanner from './components/InstallBanner'
 import OfflineBanner from './components/OfflineBanner'
@@ -811,6 +813,12 @@ export default function App() {
     }
   }
 
+  // Pastille sur l'icône de l'app installée : messages non lus + demandes en attente
+  const pending = (userId ? messagesApi.unreadTotal + friendsApi.incoming.length + roomRequests.incoming.length : 0) || 0
+  useEffect(() => {
+    setAppBadge(pending)
+  }, [pending])
+
   // --- « Je l'offre » ---
   // Pour un disque de la liste : une ligne par personne du salon qui le souhaite (pas moi),
   // avec qui l'a réservé. Dans un salon ou chez un ami, onglet Souhaits seulement.
@@ -1185,7 +1193,7 @@ export default function App() {
   const isMessenger = route.name === 'messages' || route.name === 'chat'
 
   return (
-    <div className={`min-h-screen ${route.name === 'chat' ? 'pb-0' : isMessenger ? 'pb-24 lg:pb-0' : 'pb-28 md:pb-20'}`}>
+    <div className={`min-h-screen ${route.name === 'chat' ? 'pb-0' : isMessenger ? 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0' : 'pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-20'}`}>
       <OfflineBanner online={online} />
       <TopBar
         section={section}
@@ -1303,6 +1311,7 @@ export default function App() {
         )}
 
         {/* --- Amis --- */}
+        {route.name === 'friends' && <PushPrompt onToast={toast} />}
         {route.name === 'friends' && (
           <FriendsPanel
             friends={friendsApi}
@@ -1317,6 +1326,11 @@ export default function App() {
         )}
 
         {/* --- Messages : liste + conversation --- */}
+        {route.name === 'messages' && (
+          <div className="px-5 pt-4 lg:hidden">
+            <PushPrompt onToast={toast} />
+          </div>
+        )}
         {isMessenger && (
           <Messenger
             activeId={route.name === 'chat' ? route.id : null}

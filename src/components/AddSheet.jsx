@@ -52,7 +52,7 @@ export function AddFab({ onClick, disabled }) {
       aria-label="Ajouter un disque"
       title={disabled ? 'Indisponible hors-ligne' : 'Ajouter un disque'}
       className="fab-in fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-ink shadow-[0_12px_28px_-8px_rgba(0,0,0,0.5)] transition active:scale-95 disabled:opacity-60 md:hidden"
-      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}
+      style={{ bottom: 'calc(max(0.625rem, env(safe-area-inset-bottom)) + 5.25rem)' }}
     >
       <PlusIcon width={26} height={26} />
     </button>

@@ -6,7 +6,7 @@ export default function Toasts({ toasts, onDismiss }) {
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 z-50 flex flex-col items-center gap-2 px-4 md:!bottom-5"
       // au-dessus des onglets et du bouton « + »
-      style={{ bottom: 'calc(env(safe-area-inset-bottom) + 9rem)' }}
+      style={{ bottom: 'calc(max(0.625rem, env(safe-area-inset-bottom)) + 9.5rem)' }}
     >
       {toasts.map((t) =>
         t.action ? (

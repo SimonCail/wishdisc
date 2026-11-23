@@ -147,22 +147,27 @@ export function TopBar({ section, spinKey, badges, me, onNavigate, onProfile }) 
 }
 
 // Onglets du bas (téléphone)
+// Barre d'onglets du téléphone : flottante, arrondie, au-dessus de la barre blanche de l'iPhone.
+// L'onglet actif est posé sur une pastille de couleur qui glisse d'un onglet à l'autre.
 export function TabBar({ section, badges, onNavigate }) {
   const index = Math.max(0, NAV.findIndex((n) => n.name === section))
   return (
     <nav
       aria-label="Navigation"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 md:hidden"
+      style={{
+        paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+      }}
     >
-      <div className="relative grid grid-cols-4">
-        {/* Repère de l'onglet allumé : glisse d'un onglet à l'autre */}
+      <div className="pointer-events-auto relative mx-auto grid max-w-md grid-cols-4 rounded-[1.75rem] border border-line/70 bg-surface/80 p-1.5 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55)] backdrop-blur-xl backdrop-saturate-150">
+        {/* La pastille de l'onglet actif */}
         <span
           aria-hidden="true"
-          className="tab-marker absolute top-0 h-[3px] w-1/4 rounded-b-full"
-          style={{ transform: `translateX(${index * 100}%)` }}
-        >
-          <span className="mx-auto block h-full w-10 rounded-b-full bg-[var(--color-accent)]" />
-        </span>
+          className="tab-marker absolute bottom-1.5 left-1.5 top-1.5 rounded-[1.375rem] bg-accent shadow-[0_6px_16px_-6px_var(--color-accent)]"
+          style={{ width: 'calc((100% - 0.75rem) / 4)', transform: `translateX(${index * 100}%)` }}
+        />
         {NAV.map(({ name, label, Icon }) => {
           const active = section === name
           return (
@@ -171,15 +176,15 @@ export function TabBar({ section, badges, onNavigate }) {
               data-tour={`nav-${name}`}
               onClick={() => onNavigate(name)}
               aria-current={active ? 'page' : undefined}
-              className={`relative flex flex-col items-center gap-1 pb-2 pt-2.5 text-[11px] transition ${
-                active ? 'font-bold text-accent' : 'text-muted'
+              className={`relative z-10 flex h-[3.375rem] flex-col items-center justify-center gap-0.5 rounded-[1.375rem] text-[11px] leading-none transition-[color,transform] duration-300 active:scale-90 ${
+                active ? 'keep-day font-bold text-ink' : 'font-medium text-muted hover:text-paper'
               }`}
             >
-              <span className="relative">
+              <span className={`relative transition-transform duration-300 ${active ? '-translate-y-px scale-110' : ''}`}>
                 <Icon />
-                <Badge count={badges[name]} className="absolute -right-2.5 -top-1.5" />
+                <Badge count={badges[name]} className="absolute -right-3 -top-2 ring-2 ring-surface" />
               </span>
-              {label}
+              <span className="mt-0.5">{label}</span>
             </button>
           )
         })}
