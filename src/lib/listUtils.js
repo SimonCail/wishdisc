@@ -1,4 +1,5 @@
 import { itemKey } from './discogs'
+import { matchSpecial } from './edition'
 
 const normalize = (s = '') =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -74,11 +75,12 @@ const sorters = {
   year: (a, b) => (Number(b.year) || 0) - (Number(a.year) || 0),
 }
 
-export function filterAndSort(vinyls, { sort, search, genre }) {
+export function filterAndSort(vinyls, { sort, search, genre, special }) {
   const q = normalize(search.trim())
   return vinyls
     .filter((v) => {
       if (genre && !(v.genres || []).includes(genre)) return false
+      if (special && !matchSpecial(v, special)) return false
       if (!q) return true
       return normalize(`${v.title} ${v.artist}`).includes(q)
     })

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { specialLabel } from '../lib/edition'
 import { SORT_OPTIONS } from '../lib/listUtils'
-import { SearchIcon, CloseIcon } from './Icons'
+import { SearchIcon, CloseIcon, ShareIcon } from './Icons'
 import { Avatar } from './Avatar'
 import SortSelect from './SortSelect'
 
@@ -54,7 +55,7 @@ function PeopleChips({ members, meId, person, onPerson, sharedCount }) {
 const CLOSE_DISTANCE = 110 // px à descendre pour fermer
 const CLOSE_SPEED = 0.5 // ou un geste rapide (px/ms)
 
-function FilterSheet({ options, sort, onSort, genres, genre, onGenre, people, hasFilters, onReset, onClose }) {
+function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials = [], special, onSpecial, people, hasFilters, onReset, onClose }) {
   const [dy, setDy] = useState(0) // de combien le panneau est descendu
   const [closing, setClosing] = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -169,6 +170,19 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, people, ha
           </>
         )}
 
+        {specials.length > 0 && (
+          <>
+            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">Particularités</h3>
+            <div className="flex flex-wrap gap-2">
+              {specials.map((x) => (
+                <Chip key={x.name} active={special === x.name} count={x.count} onClick={() => onSpecial(special === x.name ? '' : x.name)}>
+                  {x.label}
+                </Chip>
+              ))}
+            </div>
+          </>
+        )}
+
         {people && (
           <>
             <h3 className="mb-2 mt-6 text-sm font-medium text-muted">À qui</h3>
@@ -196,15 +210,15 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, people, ha
 // confondre avec la barre « Ajouter un disque » du haut
 export default function ListToolbar({
   search, onSearch, sort, onSort,
-  genres = [], genre, onGenre, person, onPerson,
+  genres = [], genre, onGenre, specials = [], special = '', onSpecial, person, onPerson,
   members, meId, sharedCount = 0, mode,
-  hasFilters, onReset, placeholder = 'Chercher dans la liste',
+  hasFilters, onReset, onShare, shareDisabled = false, placeholder = 'Chercher dans la liste',
 }) {
   const [sheet, setSheet] = useState(false)
   // La priorité n'a de sens que pour les souhaits
   const options = SORT_OPTIONS.filter((o) => mode !== 'owned' || o.value !== 'priority')
   const showPeople = members && members.length > 1
-  const activeCount = (genre ? 1 : 0) + (person ? 1 : 0) + (sort !== options[0]?.value ? 1 : 0)
+  const activeCount = (genre ? 1 : 0) + (special ? 1 : 0) + (person ? 1 : 0) + (sort !== options[0]?.value ? 1 : 0)
   const people = showPeople ? (
     <PeopleChips members={members} meId={meId} person={person} onPerson={onPerson} sharedCount={sharedCount} />
   ) : null
@@ -273,17 +287,37 @@ export default function ListToolbar({
               </span>
             )}
           </button>
+          {/* Partager la liste affichée (sur ordinateur : à droite des onglets) */}
+          {onShare && (
+            <button
+              onClick={onShare}
+              disabled={shareDisabled}
+              aria-label="Partager la liste"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-paper transition disabled:opacity-40"
+            >
+              <ShareIcon width={18} height={18} />
+            </button>
+          )}
         </div>
-        {genres.length > 0 && (
+        {/* Les filtres choisis dans le panneau, pour les retirer d'un geste */}
+        {(genre || special || person) && (
           <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
-            <Chip active={!genre} onClick={() => onGenre('')}>
-              Tout
-            </Chip>
-            {genres.map((g) => (
-              <Chip key={g.name} active={genre === g.name} count={g.count} onClick={() => onGenre(genre === g.name ? '' : g.name)}>
-                {g.name}
+            {genre && (
+              <Chip active onClick={() => onGenre('')}>
+                {genre} <CloseIcon width={12} height={12} />
               </Chip>
-            ))}
+            )}
+            {special && (
+              <Chip active onClick={() => onSpecial('')}>
+                {specialLabel(special)} <CloseIcon width={12} height={12} />
+              </Chip>
+            )}
+            {person && (
+              <Chip active onClick={() => onPerson('')}>
+                {person === '__shared' ? 'En commun' : person === meId ? 'Moi' : members?.find((m) => m.id === person)?.name ?? 'Personne'}{' '}
+                <CloseIcon width={12} height={12} />
+              </Chip>
+            )}
           </div>
         )}
       </div>
@@ -306,6 +340,15 @@ export default function ListToolbar({
             ))}
           </div>
         )}
+        {specials.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {specials.map((x) => (
+              <Chip key={x.name} active={special === x.name} count={x.count} onClick={() => onSpecial(special === x.name ? '' : x.name)}>
+                {x.label}
+              </Chip>
+            ))}
+          </div>
+        )}
         {showPeople && <div className="flex flex-wrap items-center gap-2">{people}</div>}
         {hasFilters && (
           <button onClick={onReset} className="flex items-center gap-1.5 text-sm text-muted transition hover:text-paper">
@@ -322,6 +365,9 @@ export default function ListToolbar({
           genres={genres}
           genre={genre}
           onGenre={onGenre}
+          specials={specials}
+          special={special}
+          onSpecial={onSpecial}
           people={people}
           hasFilters={hasFilters || sort !== options[0]?.value}
           onReset={() => {

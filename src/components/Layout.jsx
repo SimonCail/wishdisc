@@ -196,7 +196,8 @@ export function TabBar({ section, badges, onNavigate }) {
 // En-tête court des pages (salon, ami, salons, amis, messages)
 // media : image à gauche (pochette, avatar) ; actions : boutons à droite ;
 // discColor : étiquette du vinyle qui dépasse à droite
-export function PageHeader({ title, subtitle, media, actions, discColor = '#ec5b3e', children }) {
+// back : { label, onClick } pour un bouton « ‹ Salons » au-dessus du titre
+export function PageHeader({ title, subtitle, media, actions, back, discColor = '#ec5b3e', children }) {
   return (
     <header className="relative overflow-hidden bg-accent text-ink">
       <div
@@ -204,7 +205,18 @@ export function PageHeader({ title, subtitle, media, actions, discColor = '#ec5b
         className="vinyl-disc animate-disc pointer-events-none absolute -right-28 top-1/2 h-[22rem] w-[22rem] -translate-y-1/2 opacity-25 sm:-right-20 sm:opacity-100"
         style={{ '--disc-label': discColor }}
       />
-      <div className="page-in relative mx-auto max-w-[88rem] px-5 pb-8 pt-6 sm:px-8 sm:pb-10 sm:pt-8 lg:px-14">
+      <div className={`page-in relative mx-auto max-w-[88rem] px-5 pb-8 sm:px-8 sm:pb-10 lg:px-14 ${back ? 'pt-3 sm:pt-5' : 'pt-6 sm:pt-8'}`}>
+        {back && (
+          <button
+            onClick={back.onClick}
+            className="-ml-2 mb-3 flex items-center gap-1 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-bold text-ink/80 transition hover:bg-ink/10 hover:text-ink sm:mb-4"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            {back.label}
+          </button>
+        )}
         <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
           {media && <div className="shrink-0">{media}</div>}
           <div className="min-w-0 flex-1 basis-56">

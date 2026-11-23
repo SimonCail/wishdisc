@@ -72,6 +72,66 @@ function NowSpinning({ disc }) {
   )
 }
 
+// Version courte pour le bandeau réduit sur téléphone : une pastille avec la pochette
+// du disque sur la platine. Si le son est activé, la toucher lance l'extrait.
+function NowChip({ disc, name }) {
+  const player = usePlayer()
+  if (!disc?.title) {
+    return (
+      <p className="animate-fade-up mt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink/65" style={{ animationDelay: '120ms' }}>
+        La liste de {name}
+      </p>
+    )
+  }
+  const album = { key: disc.key ?? `${disc.artist}|${disc.title}`, title: disc.title, artist: disc.artist, cover_url: disc.cover_url }
+  const current = player.album?.key === album.key
+  const playing = current && player.status === 'playing'
+  const loading = current && player.status === 'loading'
+  const canPlay = player.enabled && !!disc.artist
+
+  const inner = (
+    <>
+      <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-ink/80 ring-2 ring-ink/20">
+        {disc.cover_url ? (
+          <img src={disc.cover_url} alt="" className={`h-full w-full object-cover ${playing ? 'animate-[spin_6s_linear_infinite]' : ''}`} />
+        ) : null}
+        <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
+      </span>
+      <span className="min-w-0 text-left leading-tight">
+        <span className="block truncate text-[13px] font-bold">{disc.title}</span>
+        <span className="block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">
+          {disc.artist ? disc.artist : 'Sur la platine'}
+        </span>
+      </span>
+      {canPlay && (
+        <span className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-accent">
+          {loading ? (
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+          ) : playing ? (
+            <Bars />
+          ) : (
+            <PlayIcon />
+          )}
+        </span>
+      )}
+    </>
+  )
+  const cls = 'animate-fade-up mt-3 flex max-w-[16.5rem] items-center gap-2.5 rounded-full bg-ink/10 py-1 pl-1 backdrop-blur-sm'
+  return canPlay ? (
+    <button
+      onClick={() => toggle(album)}
+      data-player-control
+      aria-label={playing ? 'Mettre en pause' : `Écouter ${disc.title}`}
+      className={`${cls} pr-1 transition active:scale-[0.97]`}
+      style={{ animationDelay: '120ms' }}
+    >
+      {inner}
+    </button>
+  ) : (
+    <div className={`${cls} pr-4`} style={{ animationDelay: '120ms' }}>{inner}</div>
+  )
+}
+
 // En-tête : platine animée + titre affiche. Le texte s'adapte à l'espace affiché.
 // disc : { cover_url, title, artist } du disque choisi dans le profil (sinon étiquette classique).
 // Dans un salon, l'étiquette prend la couleur du salon.
@@ -89,8 +149,8 @@ export default function Hero({ count, context, topRight, compact = false, dense 
     <header className="relative overflow-hidden bg-accent text-ink">
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 opacity-30 sm:-right-28 sm:h-[38rem] sm:w-[38rem] sm:opacity-100 ${
-          dense ? '-right-24 h-[17rem] w-[17rem]' : '-right-52 h-[30rem] w-[30rem]'
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 sm:-right-28 sm:h-[38rem] sm:w-[38rem] sm:opacity-100 ${
+          dense ? '-right-20 h-[15rem] w-[15rem] opacity-80' : '-right-52 h-[30rem] w-[30rem] opacity-30'
         }`}
       >
         <SpinningDisc
@@ -124,7 +184,7 @@ export default function Hero({ count, context, topRight, compact = false, dense 
           <div className="h-2" />
         )}
 
-        <div className={compact ? 'pb-20 pt-10 sm:pb-24 sm:pt-16' : dense ? 'pb-7 pt-3 sm:pb-28 sm:pt-16' : 'pb-16 pt-8 sm:pb-28 sm:pt-16'}>
+        <div className={compact ? 'pb-20 pt-10 sm:pb-24 sm:pt-16' : dense ? 'pb-6 pt-4 sm:pb-28 sm:pt-16' : 'pb-16 pt-8 sm:pb-28 sm:pt-16'}>
           {isRoom ? (
             <>
               <p className="animate-fade-up mb-4 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.15em] text-ink/70">
@@ -161,9 +221,9 @@ export default function Hero({ count, context, topRight, compact = false, dense 
             </>
           ) : isMe ? (
             <>
-              <p className={`animate-fade-up font-mono text-xs uppercase tracking-[0.15em] text-ink/70 ${dense ? 'mb-2 sm:mb-4' : 'mb-4'}`}>
+              {/* Sur téléphone, bandeau réduit : titre + pastille du disque sur la platine (le nombre est sur les onglets) */}
+              <p className={`animate-fade-up mb-4 font-mono text-xs uppercase tracking-[0.15em] text-ink/70 ${dense ? 'hidden sm:block' : ''}`}>
                 Ma liste · {context.me.name}
-                {dense && count > 0 && <span className="sm:hidden"> · {count} disque{count > 1 ? 's' : ''}</span>}
               </p>
               <h1
                 className={`font-display animate-fade-up font-black uppercase leading-[0.84] xl:text-[clamp(9.5rem,10vw,12.5rem)] ${
@@ -175,6 +235,11 @@ export default function Hero({ count, context, topRight, compact = false, dense 
                 <br className={dense ? 'hidden sm:block' : undefined} />
                 disques.
               </h1>
+              {dense && (
+                <div className="sm:hidden">
+                  <NowChip disc={disc} name={context.me.name} />
+                </div>
+              )}
               <p
                 className={`animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg ${dense ? 'hidden sm:block' : ''}`}
                 style={{ animationDelay: '120ms' }}
@@ -182,7 +247,7 @@ export default function Hero({ count, context, topRight, compact = false, dense 
                 Ce que tu veux, ce que tu as déjà. Ta liste te suit dans tous
                 les salons que tu rejoins.
               </p>
-              <div className={dense ? '-mt-2 sm:mt-0' : undefined}>
+              <div className={dense ? 'hidden sm:block' : undefined}>
                 <NowSpinning disc={disc} />
               </div>
             </>

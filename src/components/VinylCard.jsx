@@ -1,5 +1,7 @@
+import EditionTags from './EditionTags'
+import { cardTags } from '../lib/edition'
 import Cover from './Cover'
-import { StarIcon, TrashIcon, NoteIcon, ArrowIcon, CheckIcon, PlusIcon, GiftIcon } from './Icons'
+import { StarIcon, TrashIcon, NoteIcon, ArrowIcon, PlusIcon, GiftIcon, ShelveIcon } from './Icons'
 import { AvatarStack, namesLabel } from './Avatar'
 import { discogsUrl, prefetchDetails } from '../lib/discogs'
 import { useRef } from 'react'
@@ -13,7 +15,7 @@ const sinceLabel = (iso) =>
 // vinyl.owners : les membres qui ont ce disque dans le bac affiché
 // vinyl.mine   : le disque est dans MA liste (je peux le modifier)
 export default function VinylCard({
-  vinyl, index, mode, inRoom, meId, gift = null,
+  vinyl, index, mode, inRoom, meId, gift = null, isNew = false,
   onOpen, onDelete, onPriority, onNote, onGotIt, onMeToo,
 }) {
   const color = colorFor(vinyl)
@@ -74,6 +76,11 @@ export default function VinylCard({
               {badge}
             </span>
           )}
+          {isNew && !editable && (
+            <span className="keep-day absolute right-2 top-2 rounded-full bg-coral px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-white shadow">
+              Nouveau
+            </span>
+          )}
           {editable && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.() }}
@@ -107,6 +114,9 @@ export default function VinylCard({
             </span>
           </p>
         )}
+
+        {/* Couleur, signé, numéro… (2 infos au plus) */}
+        <EditionTags tags={cardTags(vinyl.edition)} className="mt-1.5" />
 
         <div className="mt-2 flex items-center justify-between">
           {mode === 'wish' ? (
@@ -147,7 +157,7 @@ export default function VinylCard({
                 aria-label="Je l'ai : passer dans ma collection"
                 className="flex items-center gap-1 whitespace-nowrap rounded-full border border-line px-2 py-0.5 text-[11px] font-medium transition hover:border-accent hover:bg-accent hover:text-ink"
               >
-                <CheckIcon width={13} height={13} /> <span className="hidden min-[400px]:inline md:inline">Je l'ai</span>
+                <ShelveIcon width={13} height={13} /> <span className="hidden min-[400px]:inline md:inline">Je l'ai eu</span>
               </button>
             )}
             {inRoom && !editable && onMeToo && (

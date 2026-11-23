@@ -1,8 +1,8 @@
 // Les deux bacs : ce qu'on veut / ce qu'on a.
 // Sur ordinateur, les boutons (Actualiser les prix, Partager) sont à droite des onglets.
-// Sur téléphone, ils passent sous le trait, pour ne pas se coller aux onglets,
-// et les deux onglets se partagent la largeur (moitié chacun, trait sur toute la moitié).
-export default function ShelfTabs({ tab, onTab, counts, actions }) {
+// Sur téléphone, seul « Compléter les infos » passe sous le trait (mobileActions) :
+// « Partager » est à côté du bouton des filtres. Les deux onglets se partagent la largeur (moitié chacun, trait sur toute la moitié).
+export default function ShelfTabs({ tab, onTab, counts, actions, mobileActions }) {
   const tabs = [
     { value: 'wish', label: 'Souhaits' },
     { value: 'owned', label: 'Collection' },
@@ -41,7 +41,7 @@ export default function ShelfTabs({ tab, onTab, counts, actions }) {
         </div>
         {actions && <div className="hidden shrink-0 sm:block">{actions}</div>}
       </div>
-      {actions && <div className="mt-4 sm:hidden">{actions}</div>}
+      {mobileActions && <div className="mt-4 sm:hidden">{mobileActions}</div>}
     </div>
   )
 }

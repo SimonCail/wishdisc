@@ -47,6 +47,12 @@ import { useMessages, vinylPayload } from './hooks/useMessages'
 import { useRoute, matchRoute, paths } from './lib/router'
 import { Avatar, AvatarStack } from './components/Avatar'
 import { ConfirmDialog, NoteDialog } from './components/Dialogs'
+import EditionSheet from './components/EditionSheet'
+import RoomShelves from './components/RoomShelves'
+import RoomNews from './components/RoomNews'
+import GiftIdeas from './components/GiftIdeas'
+import useRoomVisit from './hooks/useRoomVisit'
+import { getSpecials } from './lib/edition'
 import { ShareIcon, PlusIcon } from './components/Icons'
 
 // Disque à compléter : jamais passé par Discogs, ou pochette jamais cherchée.
@@ -113,6 +119,10 @@ export default function App() {
   const [genre, setGenre] = useState('')
   const [person, setPerson] = useState('')
   const [noteTarget, setNoteTarget] = useState(null)
+  const [editionTarget, setEditionTarget] = useState(null)
+  const [special, setSpecial] = useState('')
+  // Salon : 'all' (les rangées) ou 'gifts' (idées cadeaux)
+  const [roomView, setRoomView] = useState('all')
   const [leaveTarget, setLeaveTarget] = useState(null)
   const [detailKey, setDetailKey] = useState(null)
   const [refreshing, setRefreshing] = useState(null)
@@ -133,6 +143,8 @@ export default function App() {
   const friendId = contextId.startsWith('friend:') ? contextId.slice(7) : null
   const friend = friendId ? friendsApi.friends.find((f) => f.id === friendId) ?? null : null
   const room = contextId !== 'me' && !friendId ? rooms.find((r) => r.id === contextId) ?? null : null
+  // « Depuis ta dernière visite » (nouveautés du salon)
+  const roomVisit = useRoomVisit(room?.id ?? null, !!room)
 
   // Nouvelle page : on repart du haut
   useEffect(() => {
@@ -152,7 +164,9 @@ export default function App() {
     navigate(id === 'me' ? paths.home : id.startsWith('friend:') ? paths.friend(id.slice(7)) : paths.room(id))
     setPerson('')
     setGenre('')
+    setSpecial('')
     setSearch('')
+    setRoomView('all')
   }
 
   // --- Chargement, temps réel, resynchronisation ---
@@ -591,6 +605,25 @@ export default function App() {
     return { added: added.length, upgraded: upgraded.length }
   }
 
+  // « Mon édition » : couleur, signé, numéro… Renvoie true si c'est enregistré
+  async function saveEdition(edition) {
+    if (!ensureOnline()) return false
+    const { data, error } = await supabase
+      .from('vinyls')
+      .update({ edition })
+      .eq('id', editionTarget.myItem.id)
+      .select()
+      .single()
+    if (error) {
+      const missing = error.code === 'PGRST204' || /edition/.test(error.message || '')
+      toast(missing ? 'Lance d’abord le script 22-edition.sql dans Supabase.' : error.message, 'error')
+      return false
+    }
+    setItems((prev) => prev.map((v) => (v.id === data.id ? data : v)))
+    toast('Édition enregistrée')
+    return true
+  }
+
   async function confirmNote(note) {
     const data = await updateVinyl(noteTarget.myItem.id, { note: note || null })
     if (data) toast('Note enregistrée')
@@ -965,15 +998,17 @@ export default function App() {
   // Un filtre qui ne correspond plus à rien s'annule tout seul
   const genres = useMemo(() => getGenres(all), [all])
   const activeGenre = genres.some((g) => g.name === genre) ? genre : ''
+  const specials = useMemo(() => getSpecials(all), [all])
+  const activeSpecial = specials.some((x) => x.name === special) ? special : ''
   const activePerson =
     person === '__shared'
       ? sharedCount > 0 ? person : ''
       : members.some((m) => m.id === person) ? person : ''
-  const hasFilters = !!(search.trim() || activeGenre || activePerson)
+  const hasFilters = !!(search.trim() || activeGenre || activePerson || activeSpecial)
 
   const visible = useMemo(
-    () => filterAndSort(filterByPerson(all, activePerson), { sort, search, genre: activeGenre }),
-    [all, activePerson, sort, search, activeGenre]
+    () => filterAndSort(filterByPerson(all, activePerson), { sort, search, genre: activeGenre, special: activeSpecial }),
+    [all, activePerson, sort, search, activeGenre, activeSpecial]
   )
 
   // Pages : on affiche les disques par paquets, avec 1, 2, 3… en bas
@@ -986,7 +1021,7 @@ export default function App() {
   // Retour à la page 1 quand on change d'onglet, d'espace, de tri ou de filtre
   useEffect(() => {
     setPage(1)
-  }, [tab, contextId, sort, search, activeGenre, activePerson])
+  }, [tab, contextId, sort, search, activeGenre, activePerson, activeSpecial])
   function goToPage(n) {
     setPage(n)
     // On remonte en haut de la liste (sans repartir tout en haut du site)
@@ -1075,6 +1110,7 @@ export default function App() {
   function resetFilters() {
     setSearch('')
     setGenre('')
+    setSpecial('')
     setPerson('')
   }
 
@@ -1169,6 +1205,55 @@ export default function App() {
   const gridClass =
     'grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 sm:gap-x-10 md:grid-cols-4 md:gap-x-12 xl:grid-cols-5'
 
+  // --- Salon : rangées, nouveautés, idées cadeaux ---
+  const roomMembers = room ? room.members : []
+  const memberById = new Map(roomMembers.map((m) => [m.id, m]))
+  const roomItems = room ? items.filter((it) => memberById.has(it.owner_id) && !it.demo) : []
+  const effectiveRoomView = room && tab === 'wish' ? roomView : 'all'
+  const shelvesMode =
+    !!room && effectiveRoomView === 'all' && !activePerson && !search.trim() && !activeGenre && !activeSpecial
+  const since = roomVisit.since
+  const addedAt = (it) => (tab === 'owned' ? it.owned_at || it.created_at : it.created_at)
+  const isNew = (it) => !!since && it.owner_id !== userId && addedAt(it) > since
+  // Carte du salon (disques réunis) : nouvelle si un des autres l'a ajouté depuis ma visite
+  const isNewCard = (v) =>
+    !!room && !!since && roomItems.some((it) => it.status === tab && itemKey(it) === v.key && isNew(it))
+  const news = room && since
+    ? {
+        added: roomItems
+          .filter((it) => it.status === tab && isNew(it))
+          .sort((a, b) => (addedAt(a) < addedAt(b) ? 1 : -1))
+          .map((it) => ({ it, owner: memberById.get(it.owner_id) })),
+        moved:
+          tab === 'wish'
+            ? roomItems
+                .filter((it) => it.status === 'owned' && it.owner_id !== userId && it.owned_at && it.owned_at > since)
+                .map((it) => ({ it, owner: memberById.get(it.owner_id) }))
+            : [],
+        // Les réservations ne remontent jamais à la personne à qui on offre (règle de la base)
+        gifts:
+          tab === 'wish'
+            ? roomItems
+                .filter((it) => it.status === 'wish' && it.owner_id !== userId)
+                .map((it) => ({ it, g: gifts.byVinyl.get(String(it.id)) }))
+                .filter(({ g }) => g && g.reserved_by !== userId && g.created_at > since && memberById.has(g.reserved_by))
+                .map(({ it, g }) => ({ it, owner: memberById.get(it.owner_id), reserver: memberById.get(g.reserved_by) }))
+            : [],
+      }
+    : null
+  const giftEntries = room
+    ? roomItems
+        .filter((it) => it.status === 'wish' && it.owner_id !== userId)
+        .map((it) => ({ it, owner: memberById.get(it.owner_id), reservation: gifts.byVinyl.get(String(it.id)) ?? null }))
+    : []
+  // « Tout voir » : la liste complète d'une personne, les plus voulus d'abord
+  function seeAllOf(memberId) {
+    setPerson(memberId)
+    if (tab === 'wish' && sort === 'recent') setSort('priority')
+    requestAnimationFrame(() => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+  const personShown = room && activePerson && activePerson !== '__shared' ? memberById.get(activePerson) : null
+
   // Barre du haut / onglets : où aller
   const section = sectionOf(route.name)
   const badges = {
@@ -1215,6 +1300,7 @@ export default function App() {
       )}
       {room && (
         <PageHeader
+          back={{ label: 'Salons', onClick: () => navigate(paths.rooms) }}
           discColor={roomColor(room)}
           media={
             <button
@@ -1261,6 +1347,7 @@ export default function App() {
       )}
       {friend && (
         <PageHeader
+          back={{ label: 'Amis', onClick: () => navigate(paths.friends) }}
           discColor={friend.color}
           media={<Avatar member={friend} size={84} ring={false} className="ring-4 ring-ink/25 shadow-xl shadow-black/30" />}
           title={<>Chez {friend.name}</>}
@@ -1420,7 +1507,69 @@ export default function App() {
                 </div>
               )
             }
+            mobileActions={
+              (missingCount > 0 || refreshing) && (
+                <button
+                  onClick={refreshInfos}
+                  disabled={!!refreshing}
+                  title="Récupère les genres et les pochettes qui manquent"
+                  className="rounded-full border border-line px-3 py-1 text-xs text-muted transition hover:border-accent hover:text-paper disabled:opacity-60"
+                >
+                  {refreshing
+                    ? `Mise à jour ${refreshing.done}/${refreshing.total}…`
+                    : `Compléter les infos (${missingCount})`}
+                </button>
+              )
+            }
           />
+
+          {/* Salon : « Tous les disques / Idées cadeaux » */}
+          {room && tab === 'wish' && all.length > 0 && (
+            <div role="tablist" aria-label="Affichage du salon" className="mb-5 grid grid-cols-2 rounded-full bg-raised p-1 sm:inline-grid sm:w-80">
+              {[
+                ['all', 'Tous les disques'],
+                ['gifts', 'Idées cadeaux'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  role="tab"
+                  aria-selected={roomView === value}
+                  onClick={() => {
+                    setRoomView(value)
+                    if (value === 'gifts') setPerson('')
+                  }}
+                  className={`rounded-full px-4 py-2 text-sm transition ${
+                    roomView === value ? 'keep-day bg-accent font-bold text-ink shadow' : 'text-muted hover:text-paper'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {room && effectiveRoomView === 'gifts' && !loading ? (
+            <GiftIdeas
+              entries={giftEntries}
+              members={roomMembers}
+              meId={userId}
+              missing={gifts.missing}
+              offline={!online}
+              onOpen={(key) => setDetailKey(key)}
+              onReserve={async (e) => {
+                const err = await gifts.reserve(e.it.id)
+                toast(err || `Réservé : ${e.owner.name} ne le saura pas`, err ? 'error' : 'success')
+              }}
+              onCancel={async (e) => {
+                const err = await gifts.cancel(e.it.id)
+                toast(err || 'Réservation annulée', err ? 'error' : 'success')
+              }}
+            />
+          ) : (
+          <>
+          {room && news && shelvesMode && (
+            <RoomNews since={since} news={news} mode={tab} onOpen={(key) => setDetailKey(key)} onDismiss={roomVisit.clear} />
+          )}
 
           {all.length > 0 && (
             <>
@@ -1432,6 +1581,9 @@ export default function App() {
                 genres={genres}
                 genre={activeGenre}
                 onGenre={setGenre}
+                specials={specials}
+                special={activeSpecial}
+                onSpecial={setSpecial}
                 person={activePerson}
                 onPerson={setPerson}
                 members={memberChips}
@@ -1440,6 +1592,8 @@ export default function App() {
                 mode={tab}
                 hasFilters={hasFilters}
                 onReset={resetFilters}
+                onShare={() => setShareOpen(true)}
+                shareDisabled={visible.length === 0}
                 placeholder={`Chercher dans ${
                   friend ? `les ${tab === 'wish' ? 'souhaits' : 'disques'} de ${friend.name}`
                   : room ? `les ${tab === 'wish' ? 'souhaits' : 'collections'} du salon`
@@ -1481,6 +1635,21 @@ export default function App() {
                 </button>
               )}
             </div>
+          ) : shelvesMode ? (
+            <RoomShelves
+              items={roomItems}
+              members={roomMembers}
+              meId={userId}
+              mode={tab}
+              isNew={isNew}
+              giftOf={(it) => {
+                if (tab !== 'wish' || gifts.missing) return null
+                const g = gifts.byVinyl.get(String(it.id))
+                return g ? (g.reserved_by === userId ? 'mine' : 'taken') : null
+              }}
+              onOpen={(key) => setDetailKey(key)}
+              onSeeAll={seeAllOf}
+            />
           ) : visible.length === 0 ? (
             <div className="py-10 text-center">
               {canSearchToAdd ? (
@@ -1518,6 +1687,28 @@ export default function App() {
             </div>
           ) : (
             <>
+            {/* Salon, « Tout voir » : la liste d'une personne */}
+            {personShown && (
+              <div className="-mt-1 mb-6 flex items-center gap-3">
+                <button
+                  onClick={() => setPerson('')}
+                  aria-label="Revenir au salon"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-xl transition hover:border-accent"
+                >
+                  ‹
+                </button>
+                <Avatar member={personShown} size={36} ring={false} />
+                <p className="min-w-0 leading-tight">
+                  <span className="block truncate font-display text-xl font-black uppercase">
+                    {personShown.id === userId ? 'Mes' : `Les`} {tab === 'wish' ? 'souhaits' : 'disques'}
+                    {personShown.id === userId ? '' : ` de ${personShown.name}`}
+                  </span>
+                  <span className="block text-sm text-muted">
+                    {visible.length} disque{visible.length > 1 ? 's' : ''} · salon {room.name}
+                  </span>
+                </p>
+              </div>
+            )}
             {canSearchToAdd && (
               <p className="-mt-2 mb-5 text-sm text-muted">
                 Tu veux ajouter un disque ?{' '}
@@ -1542,6 +1733,7 @@ export default function App() {
                   onGotIt={() => gotIt(v.myItem)}
                   onMeToo={statusOf(v) ? undefined : () => addItem(v, tab)}
                   gift={giftStateOf(v)}
+                  isNew={isNewCard(v)}
                 />
               ))}
             </ul>
@@ -1553,6 +1745,8 @@ export default function App() {
               onPage={goToPage}
             />
             </>
+          )}
+          </>
           )}
         </section>
 
@@ -1581,6 +1775,7 @@ export default function App() {
           onPriority={(p) => updateVinyl(detailVinyl.myItem.id, { priority: p })}
           onGotIt={() => gotIt(detailVinyl.myItem)}
           onNote={() => setNoteTarget(detailVinyl)}
+          onEdition={() => setEditionTarget(detailVinyl)}
           onMeToo={() => addItem(detailVinyl, tab)}
           gifts={giftRowsOf(detailVinyl)}
           onReserve={async (row) => {
@@ -1675,6 +1870,14 @@ export default function App() {
           onClose={() => setRoomSettingsOpen(false)}
           onToast={toast}
           offline={!online}
+        />
+      )}
+      {editionTarget && (
+        <EditionSheet
+          vinyl={editionTarget.myItem ?? editionTarget}
+          mode={editionTarget.myItem?.status ?? tab}
+          onSave={saveEdition}
+          onClose={() => setEditionTarget(null)}
         />
       )}
       {noteTarget && (

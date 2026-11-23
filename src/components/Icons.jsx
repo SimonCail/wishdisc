@@ -35,6 +35,10 @@ export const NoteIcon = (p) => (
 export const ArrowIcon = (p) => (
   <svg {...base} {...p}><path d="M7 17 17 7M8 7h9v9" /></svg>
 )
+// Ranger dans la collection (flèche qui descend dans un bac)
+export const ShelveIcon = (p) => (
+  <svg {...base} {...p}><path d="M12 3v11M7.5 9.5 12 14l4.5-4.5M4 14v4.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V14" /></svg>
+)
 export const StarIcon = ({ filled, ...p }) => (
   <svg {...base} fill={filled ? 'currentColor' : 'none'} {...p}>
     <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />

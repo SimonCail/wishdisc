@@ -1,11 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Cover from './Cover'
-import { CloseIcon, ArrowIcon, StarIcon, CheckIcon, PlusIcon, NoteIcon, GiftIcon } from './Icons'
+import { CloseIcon, ArrowIcon, StarIcon, PlusIcon, NoteIcon, GiftIcon, ShelveIcon } from './Icons'
 import { AvatarStack } from './Avatar'
 import { getDetails, peekDetails, discogsUrl } from '../lib/discogs'
 import { colorFor } from '../lib/palette'
 import StoreLinks from './StoreLinks'
 import { ENVIE } from '../lib/envie'
+import { editionTags } from '../lib/edition'
+import EditionTags from './EditionTags'
 import { btn } from '../lib/ui'
 
 function PlayIcon(p) {
@@ -97,7 +99,7 @@ const sinceLabel = (iso) =>
 // Les actions (étoiles, « Je l'ai », note, « Moi aussi ») sont les mêmes que sur la carte.
 export default function VinylDetail({
   vinyl, mode, inRoom, canAdd,
-  onSync, onClose, onPriority, onGotIt, onNote, onMeToo,
+  onSync, onClose, onPriority, onGotIt, onNote, onMeToo, onEdition,
   gifts = [], onReserve, onCancelGift,
 }) {
   // « Je l'offre » : une ligne par proche qui veut ce disque
@@ -115,6 +117,7 @@ export default function VinylDetail({
   const synced = useRef(false)
   const color = colorFor(vinyl)
   const mine = vinyl.mine
+  const editionList = editionTags(vinyl.edition, mode)
   const titleRef = useRef(null)
   useFitTitle(titleRef, vinyl.title)
 
@@ -288,12 +291,42 @@ export default function VinylDetail({
               </p>
             )}
 
+            {/* Mon édition : couleur, signé, numéro… (rempli par la personne elle-même) */}
+            {mine ? (
+              <button
+                onClick={onEdition}
+                className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-line p-3.5 text-left transition hover:border-accent hover:bg-raised/50"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-bold uppercase tracking-[0.12em] text-muted">Mon édition</span>
+                  {editionList.length ? (
+                    <EditionTags tags={editionList} size="md" className="mt-2" />
+                  ) : (
+                    <span className="mt-1 block text-sm text-muted">
+                      Couleur, signé, numéroté, exclu…{mode === 'wish' ? ' ou peu importe ?' : ''}
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 text-sm font-bold text-accent">{editionList.length ? 'Modifier' : 'Préciser'}</span>
+              </button>
+            ) : (
+              editionList.length > 0 && (
+                <div className="mt-5">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
+                    {owners.length > 1 ? `L’édition de ${owners.find((o) => o.id === vinyl.owner_id)?.name ?? 'son propriétaire'}` : 'Son édition'}
+                  </p>
+                  <EditionTags tags={editionList} size="md" />
+                </div>
+              )
+            )}
+
             {/* Actions, comme sur la carte */}
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {mine && mode === 'wish' && (
                 <>
-                  <button onClick={onGotIt} className={btn.primary}>
-                    <CheckIcon width={16} height={16} /> Je l'ai
+                  {/* Une action (pas un état) : bouton à contour, pour ne pas faire croire que c'est déjà fait */}
+                  <button onClick={onGotIt} className={btn.secondary} title="Je l'ai eu : passer dans ma collection">
+                    <ShelveIcon width={16} height={16} /> Je l'ai eu
                   </button>
                 </>
               )}

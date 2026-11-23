@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import useVisibleArea from '../hooks/useVisibleArea'
 import SearchPanel, { BarcodeIcon } from './SearchPanel'
 import { CloseIcon, PlusIcon } from './Icons'
 
@@ -8,32 +9,8 @@ import { CloseIcon, PlusIcon } from './Icons'
 const CLOSE_DISTANCE = 110 // px à descendre pour fermer
 const CLOSE_SPEED = 0.5 // ou un geste rapide (px/ms)
 
-// La partie de l'écran vraiment visible (sans le clavier).
-// Sur iPhone, le clavier passe PAR-DESSUS la page et fait glisser l'écran : on cale donc
-// le panneau sur cette zone visible, pour qu'il reste entier au-dessus du clavier.
-function useVisibleArea() {
-  const read = () => {
-    const vv = window.visualViewport
-    if (!vv || !vv.height) return { top: 0, height: window.innerHeight, keyboard: false }
-    return { top: vv.offsetTop, height: vv.height, keyboard: window.innerHeight - vv.height > 120 }
-  }
-  const [area, setArea] = useState(read)
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    const update = () => setArea(read())
-    update()
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    window.addEventListener('resize', update)
-    return () => {
-      vv.removeEventListener('resize', update)
-      vv.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
-    }
-  }, [])
-  return area
-}
+// Sur iPhone, le clavier passe PAR-DESSUS la page : le panneau est calé sur la zone
+// vraiment visible (useVisibleArea), pour rester entier au-dessus du clavier.
 
 const ImportIcon = (p) => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2"
