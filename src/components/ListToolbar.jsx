@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { specialLabel } from '../lib/edition'
 import { SORT_OPTIONS } from '../lib/listUtils'
-import { SearchIcon, CloseIcon, ShareIcon } from './Icons'
+import { SearchIcon, CloseIcon, ShareIcon, CardsIcon, WallIcon, CrateIcon } from './Icons'
 import { Avatar } from './Avatar'
 import SortSelect from './SortSelect'
 import { t } from '../lib/i18n'
@@ -208,6 +208,7 @@ export default function ListToolbar({
   genres = [], genre, onGenre, specials = [], special = '', onSpecial, person, onPerson,
   members, meId, sharedCount = 0, mode,
   hasFilters, onReset, onShare, shareDisabled = false, placeholder = t('Chercher dans la liste'),
+  view = 'list', onView, onCrate,
 }) {
   const [sheet, setSheet] = useState(false)
   // La priorité n'a de sens que pour les souhaits
@@ -282,6 +283,8 @@ export default function ListToolbar({
               </span>
             )}
           </button>
+          {/* Affichage : cartes, mur de pochettes, ou fouiller le bac (petit menu) */}
+          {onView && <ViewMenu view={view} onView={onView} onCrate={onCrate} />}
           {/* Partager la liste affichée (sur ordinateur : à droite des onglets) */}
           {onShare && (
             <button
@@ -321,6 +324,33 @@ export default function ListToolbar({
       <div className="hidden space-y-4 sm:block">
         <div className="flex gap-2">
           {searchField}
+          {onView && (
+            <div role="group" aria-label={t('Affichage')} className="flex shrink-0 overflow-hidden rounded-2xl border border-line bg-surface">
+              {[
+                ['list', t('Liste'), CardsIcon],
+                ['wall', t('Mur'), WallIcon],
+              ].map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  onClick={() => onView(value)}
+                  aria-pressed={view === value}
+                  className={`flex items-center gap-1.5 px-3.5 text-sm transition ${
+                    view === value ? 'keep-day bg-accent font-bold text-ink' : 'text-muted hover:text-paper'
+                  }`}
+                >
+                  <Icon width={16} height={16} /> {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {onCrate && (
+            <button
+              onClick={onCrate}
+              className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-line bg-surface px-3.5 text-sm transition hover:border-accent"
+            >
+              <CrateIcon width={16} height={16} /> {t('Fouiller')}
+            </button>
+          )}
           <SortSelect value={sort} options={options} onChange={onSort} />
         </div>
         {genres.length > 0 && (
@@ -369,6 +399,61 @@ export default function ListToolbar({
           onClose={() => setSheet(false)}
         />,
         document.body
+      )}
+    </div>
+  )
+}
+// Téléphone : un seul bouton « Affichage » qui ouvre un petit menu
+function ViewMenu({ view, onView, onCrate }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => !ref.current?.contains(e.target) && setOpen(false)
+    const esc = (e) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('pointerdown', close)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [open, setOpen])
+  const items = [
+    ['list', t('Cartes'), CardsIcon, () => onView('list')],
+    ['wall', t('Mur de pochettes'), WallIcon, () => onView('wall')],
+    ...(onCrate ? [['crate', t('Fouiller le bac'), CrateIcon, onCrate]] : []),
+  ]
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label={t('Affichage')}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
+          view === 'wall' ? 'border-accent bg-accent text-ink' : 'border-line bg-surface text-paper'
+        }`}
+      >
+        {view === 'wall' ? <WallIcon width={18} height={18} /> : <CardsIcon width={18} height={18} />}
+      </button>
+      {open && (
+        <div role="menu" className="animate-pop absolute right-0 top-12 z-30 w-56 rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
+          {items.map(([id, label, Icon, run]) => (
+            <button
+              key={id}
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                run()
+              }}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-raised ${
+                view === id ? 'font-bold text-accent' : ''
+              }`}
+            >
+              <Icon width={18} height={18} /> {label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )

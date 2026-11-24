@@ -3,6 +3,7 @@ import { Avatar, AvatarStack } from './Avatar'
 import { RoomCover, CrownIcon } from './Rooms'
 import { PlusIcon } from './Icons'
 import { t, tn } from '../lib/i18n'
+import Illustration from './Illustration'
 
 const field =
   'w-full min-w-0 rounded-2xl border border-line bg-ink px-4 py-3 outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60'
@@ -149,7 +150,7 @@ export default function RoomsPage({
         </ul>
       ) : (
         <div className="rounded-3xl border border-dashed border-line px-6 py-12 text-center">
-          <div className="vinyl-disc mx-auto h-20 w-20 animate-slow-spin" style={{ '--disc-label': '#6aa6d6' }} />
+          <Illustration kind="room" />
           <p className="mt-5 font-display text-2xl font-black uppercase">{t('Aucun salon pour l’instant')}</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted">{t('Un salon met en commun les souhaits et les collections de plusieurs personnes. Crée le tien ou entre le code qu’on t’a donné.')}</p>
         </div>

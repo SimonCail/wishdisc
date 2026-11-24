@@ -42,6 +42,7 @@ export function useRoute() {
 //   /ami/:id         → les disques d'un ami
 //   /messages        → mes conversations
 //   /messages/:id    → conversation avec un ami
+//   /disquaires      → la carte des disquaires autour de moi
 export function matchRoute(path) {
   const [, a = '', b = ''] = path.split('/')
   const id = b ? decodeURIComponent(b) : null
@@ -50,6 +51,7 @@ export function matchRoute(path) {
   if (a === 'amis') return { name: 'friends' }
   if (a === 'ami' && id) return { name: 'friend', id }
   if (a === 'messages') return id ? { name: 'chat', id } : { name: 'messages' }
+  if (a === 'disquaires') return { name: 'shops' }
   return { name: 'home' }
 }
 
@@ -61,4 +63,5 @@ export const paths = {
   friend: (id) => `/ami/${encodeURIComponent(id)}`,
   messages: '/messages',
   chat: (id) => `/messages/${encodeURIComponent(id)}`,
+  shops: '/disquaires',
 }

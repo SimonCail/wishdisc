@@ -70,6 +70,16 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // Fond de la carte des disquaires : gardé une semaine, la carte s'affiche tout de suite
+            urlPattern: /^https:\/\/tile\.openstreetmap\.org\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'map-tiles',
+              expiration: { maxEntries: 600, maxAgeSeconds: 7 * DAY },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),

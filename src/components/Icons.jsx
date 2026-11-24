@@ -65,3 +65,58 @@ export const CopyIcon = (p) => (
 export const ChevronIcon = (p) => (
   <svg {...base} {...p}><path d="m6 9 6 6 6-6" /></svg>
 )
+
+// Vue « liste » (cartes) et vue « mur » (pochettes serrées)
+export const CardsIcon = (p) => (
+  <svg {...base} {...p}>
+    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+    <path d="M4 15h7M4 19h5M13 15h7M13 19h5" />
+  </svg>
+)
+export const WallIcon = (p) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="3.5" width="5" height="5" rx="0.8" />
+    <rect x="9.5" y="3.5" width="5" height="5" rx="0.8" />
+    <rect x="15.5" y="3.5" width="5" height="5" rx="0.8" />
+    <rect x="3.5" y="9.5" width="5" height="5" rx="0.8" />
+    <rect x="9.5" y="9.5" width="5" height="5" rx="0.8" />
+    <rect x="15.5" y="9.5" width="5" height="5" rx="0.8" />
+    <rect x="3.5" y="15.5" width="5" height="5" rx="0.8" />
+    <rect x="9.5" y="15.5" width="5" height="5" rx="0.8" />
+    <rect x="15.5" y="15.5" width="5" height="5" rx="0.8" />
+  </svg>
+)
+// Fouiller le bac : des pochettes en perspective
+export const CrateIcon = (p) => (
+  <svg {...base} {...p}>
+    <path d="M7 4h10l1.5 6h-13z" />
+    <path d="M5.5 10h13" />
+    <path d="M3 13h18v6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19z" />
+    <path d="M9 16.5h6" />
+  </svg>
+)
+
+export const PinIcon = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+    <circle cx="12" cy="10" r="2.4" />
+  </svg>
+)
+
+// Un disque qui part vers quelqu'un (prêt)
+export const LendIcon = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="9" cy="12" r="6" />
+    <circle cx="9" cy="12" r="1.6" />
+    <path d="M17 8.5 20.5 12 17 15.5" />
+    <path d="M13.5 12h7" />
+  </svg>
+)
+
+export const CalendarIcon = (p) => (
+  <svg {...base} {...p}>
+    <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </svg>
+)

@@ -16,7 +16,7 @@ const sinceLabel = (iso) =>
 // vinyl.owners : les membres qui ont ce disque dans le bac affiché
 // vinyl.mine   : le disque est dans MA liste (je peux le modifier)
 export default function VinylCard({
-  vinyl, index, mode, inRoom, meId, gift = null, isNew = false,
+  vinyl, index, mode, inRoom, meId, gift = null, isNew = false, lentTo = null,
   onOpen, onDelete, onPriority, onNote, onGotIt, onMeToo,
 }) {
   const color = colorFor(vinyl)
@@ -75,6 +75,11 @@ export default function VinylCard({
               }`}
             >
               {badge}
+            </span>
+          )}
+          {lentTo && (
+            <span className="keep-day absolute bottom-2 left-2 max-w-[85%] truncate rounded-full bg-[#1b2420]/85 px-2 py-0.5 text-[11px] font-bold text-[#f5f1e8] shadow">
+              {t('Chez {name}', { name: lentTo })}
             </span>
           )}
           {isNew && !editable && (

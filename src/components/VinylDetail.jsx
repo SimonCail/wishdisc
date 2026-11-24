@@ -9,6 +9,7 @@ import { ENVIE } from '../lib/envie'
 import { editionTags } from '../lib/edition'
 import EditionTags from './EditionTags'
 import { btn } from '../lib/ui'
+import useCoverColor from '../hooks/useCoverColor'
 import { t, tn, locale } from '../lib/i18n'
 
 function PlayIcon(p) {
@@ -100,7 +101,7 @@ const sinceLabel = (iso) =>
 // Les actions (étoiles, « Je l'ai », note, « Moi aussi ») sont les mêmes que sur la carte.
 export default function VinylDetail({
   vinyl, mode, inRoom, canAdd,
-  onSync, onClose, onPriority, onGotIt, onNote, onMeToo, onEdition,
+  onSync, onClose, onPriority, onGotIt, onNote, onMeToo, onEdition, onShops, extra = null,
   gifts = [], onReserve, onCancelGift,
 }) {
   // « Je l'offre » : une ligne par proche qui veut ce disque
@@ -116,7 +117,6 @@ export default function VinylDetail({
   const [error, setError] = useState(null)
   const [compact, setCompact] = useState(false)
   const synced = useRef(false)
-  const color = colorFor(vinyl)
   const mine = vinyl.mine
   const editionList = editionTags(vinyl.edition, mode)
   const titleRef = useRef(null)
@@ -161,6 +161,9 @@ export default function VinylDetail({
   const genres = details?.genres ?? vinyl.genres ?? []
   const styles = details?.styles ?? vinyl.styles ?? []
   const cover = vinyl.cover_url || details?.cover_url
+  // La couleur de la pochette (sinon celle de la palette) : elle teinte le haut de la fiche
+  const coverRgb = useCoverColor(cover)
+  const color = coverRgb ? `rgb(${coverRgb.join(' ')})` : colorFor(vinyl)
   const videos = (details?.videos ?? []).filter((v) => v.uri?.startsWith('http')).slice(0, 4)
   const owners = vinyl.owners || []
   const sides = useMemo(() => groupBySide(details?.tracklist ?? []), [details])
@@ -213,7 +216,12 @@ export default function VinylDetail({
           {/* En-tête : pochette + disque à la couleur du vinyle */}
           <header
             className="px-5 pb-6 pt-6 sm:px-7 sm:pt-7"
-            style={{ background: `linear-gradient(180deg, color-mix(in oklab, ${color} 22%, transparent), transparent)` }}
+            style={{
+              background: coverRgb
+                ? `linear-gradient(180deg, color-mix(in oklab, ${color} 62%, transparent) 0%, color-mix(in oklab, ${color} 30%, transparent) 55%, transparent 100%)`
+                : `linear-gradient(180deg, color-mix(in oklab, ${color} 22%, transparent), transparent)`,
+              transition: 'background 0.5s',
+            }}
           >
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
               <div className="relative mr-12 w-36 shrink-0 sm:mr-16 sm:w-44">
@@ -344,6 +352,9 @@ export default function VinylDetail({
               )}
             </div>
 
+            {/* Prêt du disque (ma collection) */}
+            {extra}
+
             {gifts.length > 0 && (
               <div className="mt-5 rounded-2xl border border-line p-4">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
@@ -379,7 +390,7 @@ export default function VinylDetail({
           </header>
 
           <div className="space-y-6 px-5 pb-6 sm:px-7">
-            <StoreLinks vinyl={vinyl} barcode={details?.barcode} />
+            <StoreLinks vinyl={vinyl} barcode={details?.barcode} onShops={onShops} />
             <a
               href={marketUrl(vinyl)}
               target="_blank"

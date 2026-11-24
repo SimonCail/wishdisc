@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
 import { CloseIcon, SearchIcon } from './Icons'
 import { t, tn, locale } from '../lib/i18n'
+import Illustration from './Illustration'
+import Birthdays from './Birthdays'
 
 export const FriendsIcon = (p) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -44,7 +46,7 @@ const ghost = `${smallBtn} border border-line font-medium hover:border-accent`
 // onInvite : partager le lien de l'app.
 export default function FriendsPanel({
   friends, onOpenFriend, onMessage, onToast, offline,
-  statsOf = () => ({ wish: 0, owned: 0, covers: [], common: 0 }), activity = [], onInvite,
+  statsOf = () => ({ wish: 0, owned: 0, covers: [], common: 0 }), activity = [], onInvite, birthdays = [],
 }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -232,6 +234,9 @@ export default function FriendsPanel({
         </section>
       )}
 
+      {/* --- Anniversaires à venir --- */}
+      <Birthdays list={birthdays} onOpenFriend={onOpenFriend} />
+
       {/* --- Mes amis : une « pochette » par ami --- */}
       <section>
         <div className="mb-4 flex items-baseline justify-between gap-3">
@@ -241,10 +246,7 @@ export default function FriendsPanel({
 
         {list.length === 0 ? (
           <div className="relative overflow-hidden rounded-3xl border border-dashed border-line px-6 py-12 text-center">
-            <div className="relative mx-auto h-24 w-40">
-              <span className="vinyl-disc absolute left-0 top-2 h-20 w-20 animate-disc" style={{ '--disc-label': '#f09aaa' }} />
-              <span className="vinyl-disc absolute right-0 top-2 h-20 w-20 animate-disc" style={{ '--disc-label': '#6aa6d6' }} />
-            </div>
+            <Illustration kind="friends" />
             <p className="mt-4 font-display text-3xl font-black uppercase leading-none">{t('Les disques, c’est mieux à plusieurs')}</p>
             <p className="mx-auto mt-2 max-w-sm text-sm text-muted">{t('Ajoute tes proches pour voir ce qu’ils veulent, ce qu’ils ont déjà, et ne plus jamais offrir un disque en double.')}</p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">

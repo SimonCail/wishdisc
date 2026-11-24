@@ -250,7 +250,8 @@ export default function Tour({ me, onSection, onDemoVinyl, onFinish }) {
   // Chaque étape ouvre sa page
   useEffect(() => {
     if (step.section) onSection(step.section)
-    if (step.target === 'add') window.scrollTo({ top: 0 })
+    // Le + et la barre du haut sont en haut de page (la barre ne suit pas sur ordinateur)
+    if (step.target === 'add' || step.target?.startsWith('nav-')) window.scrollTo({ top: 0 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index])
 

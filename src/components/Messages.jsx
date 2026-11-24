@@ -3,6 +3,7 @@ import { Avatar } from './Avatar'
 import { CheckIcon, CloseIcon, PlusIcon, SearchIcon, TrashIcon } from './Icons'
 import { RecordIcon } from './Layout'
 import { t, tn, locale } from '../lib/i18n'
+import Illustration from './Illustration'
 
 // --- Dates ---
 const sameDay = (a, b) => a.toDateString() === b.toDateString()
@@ -175,10 +176,7 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
 
         {friends.length === 0 && conversations.length === 0 && (
           <div className="mx-3 mt-2 rounded-3xl border border-dashed border-line px-5 py-10 text-center">
-            <div className="relative mx-auto h-20 w-28">
-              <span className="absolute left-0 top-2 h-16 w-16 rotate-[-8deg] rounded-md bg-raised shadow" />
-              <span className="vinyl-disc absolute right-0 top-0 h-20 w-20 animate-slow-spin" style={{ '--disc-label': '#f1c04e' }} />
-            </div>
+            <Illustration kind="friends" />
             <p className="mt-5 font-display text-2xl font-black uppercase leading-none">{t('Personne à qui écrire')}</p>
             <p className="mx-auto mt-2 max-w-xs text-sm text-muted">{t('Les messages se font entre amis. Ajoute quelqu’un pour parler disques et cadeaux.')}</p>
             <button

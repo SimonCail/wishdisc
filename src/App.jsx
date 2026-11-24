@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { useToasts } from './hooks/useToasts'
 import { useAuth } from './hooks/useAuth'
@@ -13,7 +13,7 @@ import { getDetails, itemKey } from './lib/discogs'
 import { readCache, writeCache } from './lib/cache'
 import { copyToClipboard } from './lib/share'
 import { applyAccent, restoreAccent } from './lib/accent'
-import { playAlbum, autoStart, stop as stopPlayer, stopIfPlaying, unlock as unlockPlayer } from './lib/player'
+import { playAlbum, autoStart, stop as stopPlayer, stopIfPlaying, unlock as unlockPlayer, usePlayer } from './lib/player'
 import Hero from './components/Hero'
 import { ThemeToggle } from './components/ThemePicker'
 import ShelfTabs from './components/ShelfTabs'
@@ -49,11 +49,27 @@ import { Avatar, AvatarStack } from './components/Avatar'
 import { ConfirmDialog, NoteDialog } from './components/Dialogs'
 import EditionSheet from './components/EditionSheet'
 import RoomShelves from './components/RoomShelves'
+import Illustration from './components/Illustration'
+import CrateView from './components/CrateView'
+import Celebrate from './components/Celebrate'
+import LoanBlock, { borrowerOf, isLate, shortDate } from './components/LoanBlock'
+import LoansSheet from './components/LoansSheet'
+import WrappedView from './components/WrappedView'
+import ComingSoon from './components/ComingSoon'
+// La carte (Leaflet) ne se charge qu'à l'ouverture
+const loadRecordShops = () => import('./components/RecordShops')
+const RecordShops = lazy(loadRecordShops)
+import { freshPeriods, periodId, periodLabel, releasedWrapped } from './lib/wrapped'
+import useWrappedSeen from './hooks/useWrappedSeen'
+import WrappedArchive from './components/WrappedArchive'
+import useLoans from './hooks/useLoans'
+import useBirthdays, { nextBirthday } from './hooks/useBirthdays'
 import RoomNews from './components/RoomNews'
 import GiftIdeas from './components/GiftIdeas'
 import useRoomVisit from './hooks/useRoomVisit'
 import { getSpecials } from './lib/edition'
-import { ShareIcon, PlusIcon } from './components/Icons'
+import { ShareIcon, PlusIcon, CloseIcon } from './components/Icons'
+import Cover from './components/Cover'
 import { t, tn } from './lib/i18n'
 
 // Disque à compléter : jamais passé par Discogs, ou pochette jamais cherchée.
@@ -124,6 +140,57 @@ export default function App() {
   const [special, setSpecial] = useState('')
   // Salon : 'all' (les rangées) ou 'gifts' (idées cadeaux)
   const [roomView, setRoomView] = useState('all')
+  // Affichage de la liste : 'list' (cartes) ou 'wall' (mur de pochettes), retenu sur l'appareil
+  const [view, setViewState] = useState(() => {
+    try {
+      return localStorage.getItem('wishdisc-view') === 'wall' ? 'wall' : 'list'
+    } catch {
+      return 'list'
+    }
+  })
+  function setView(v) {
+    setViewState(v)
+    try {
+      localStorage.setItem('wishdisc-view', v)
+    } catch {
+      // pas grave
+    }
+  }
+  // « Fouiller le bac » : les disques un par un, en grand
+  const [crateOpen, setCrateOpen] = useState(false)
+
+  // « Souhait exaucé ! » après « Je l'ai eu »
+  const [celebrate, setCelebrate] = useState(null)
+  const [loansOpen, setLoansOpen] = useState(false)
+  // Wrapped : celui qu'on regarde (null = fermé), « Mes Wrapped », ceux déjà vus sur l'appareil
+  const [wrappedOpen, setWrappedOpen] = useState(null)
+  const [wrappedArchive, setWrappedArchive] = useState(false)
+  const { seen: wrappedSeen, markSeen: markWrappedSeen } = useWrappedSeen(userId)
+  const openWrapped = useCallback(
+    (w) => {
+      markWrappedSeen(w.id)
+      setWrappedOpen(w)
+    },
+    [markWrappedSeen],
+  )
+  const endCelebrate = useCallback(() => setCelebrate(null), [])
+  // Onglet Disquaires : on prépare la carte et les magasins en arrière-plan,
+  // pour qu'ils s'affichent tout de suite quand on ouvre l'onglet
+  useEffect(() => {
+    if (!user) return
+    const run = () => {
+      loadRecordShops().catch(() => {})
+      import('./lib/recordShops')
+        .then(({ findShops, lastPosition }) => {
+          const p = lastPosition()
+          if (p && navigator.onLine) return findShops(p)
+        })
+        .catch(() => {})
+    }
+    const id = 'requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 4000 }) : setTimeout(run, 2500)
+    return () => ('cancelIdleCallback' in window ? cancelIdleCallback(id) : clearTimeout(id))
+  }, [user])
+  const player = usePlayer()
   const [leaveTarget, setLeaveTarget] = useState(null)
   const [detailKey, setDetailKey] = useState(null)
   const [refreshing, setRefreshing] = useState(null)
@@ -138,6 +205,9 @@ export default function App() {
 
   // Espace affiché : 'me', l'id d'un salon, ou 'friend:<id>' (les disques d'un ami)
   const friendsApi = useFriends(userId)
+  // Prêts de mes disques et anniversaires (script 24)
+  const loansApi = useLoans(userId)
+  const birthdaysApi = useBirthdays(userId)
   const gifts = useGifts(userId)
   const reloadFriends = friendsApi.reload
   const messagesApi = useMessages(userId)
@@ -500,11 +570,18 @@ export default function App() {
   // Un souhait exaucé : il passe dans ma collection
   async function gotIt(mine) {
     if (!mine) return null
+    const wasWish = mine.status === 'wish'
     const data = await updateVinyl(mine.id, {
       status: 'owned',
       owned_at: new Date().toISOString(),
     })
-    if (data) toast(t('« {title} » rejoint ta collection', { title: data.title }))
+    if (data) {
+      // Souhait exaucé : petite fête (le n-ième de l'année)
+      const year = new Date().getFullYear()
+      const count = items.filter((it) => it.owner_id === userId && it.status === 'owned' && it.owned_at && new Date(it.owned_at).getFullYear() === year && it.id !== data.id).length + 1
+      if (wasWish) setCelebrate({ vinyl: data, count })
+      else toast(t('« {title} » rejoint ta collection', { title: data.title }))
+    }
     return data
   }
 
@@ -1202,6 +1279,41 @@ export default function App() {
   const gridClass =
     'grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 sm:gap-x-10 md:grid-cols-4 md:gap-x-12 xl:grid-cols-5'
 
+  // Anniversaires à venir de mes amis (page Amis), avec leurs plus grosses envies
+  const upcomingBirthdays = birthdaysApi.rows
+    .filter((b) => b.user_id !== userId)
+    .map((b) => {
+      const person = friendsApi.friends.find((f) => f.id === b.user_id) || people.get(b.user_id)
+      if (!person) return null
+      const wishes = items
+        .filter((it) => it.owner_id === b.user_id && it.status === 'wish' && it.cover_url)
+        .sort((x, y) => (y.priority || 0) - (x.priority || 0))
+        .slice(0, 3)
+      return { person, wishes, ...nextBirthday(b) }
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.days - b.days)
+
+  // Wrapped : tous ceux déjà sortis, et le bandeau quand un nouveau vient d'arriver
+  // (le mois : la première semaine ; l'année : du 26 décembre à fin janvier), tant qu'on ne l'a pas ouvert
+  const wrappedReleased = releasedWrapped(myItems.filter((it) => !it.demo))
+  // « Nouveau » : seulement ce qui vient de sortir et qu'on n'a pas encore ouvert
+  const wrappedFreshIds = new Set(freshPeriods().map(periodId))
+  const wrappedIsNew = (w) => wrappedFreshIds.has(w.id) && !wrappedSeen.has(w.id)
+  const wrappedFresh =
+    freshPeriods()
+      .map((p) => [...wrappedReleased.years, ...wrappedReleased.months].find((x) => x.id === periodId(p)))
+      .find((w) => w && wrappedIsNew(w)) || null
+
+  // Prêts en cours (sur ma collection seulement)
+  const lentToOf = (v) => {
+    if (tab !== 'owned' || !v.mine || !v.myItem) return null
+    const loan = loansApi.byVinyl.get(String(v.myItem.id))
+    return loan ? borrowerOf(loan, people).name : null
+  }
+  const loansCount = route.name === 'home' && tab === 'owned' ? loansApi.loans.length : 0
+  const loansLate = loansApi.loans.filter(isLate).length
+
   // --- Salon : rangées, nouveautés, idées cadeaux ---
   const roomMembers = room ? room.members : []
   const memberById = new Map(roomMembers.map((m) => [m.id, m]))
@@ -1258,7 +1370,7 @@ export default function App() {
     friends: friendsApi.incoming.length,
     messages: messagesApi.unreadTotal,
   }
-  const goSection = (name) => navigate({ home: paths.home, rooms: paths.rooms, friends: paths.friends, messages: paths.messages }[name])
+  const goSection = (name) => navigate({ home: paths.home, rooms: paths.rooms, friends: paths.friends, messages: paths.messages, shops: paths.shops }[name])
   // Qui est la personne d'une conversation : un ami, un membre d'un salon, un ancien ami…
   // ou un compte supprimé (ses messages restent visibles)
   const partners = messagesApi.partners
@@ -1357,6 +1469,13 @@ export default function App() {
           subtitle={t('Vos souhaits et vos collections mis en commun, par code.')}
         />
       )}
+      {route.name === 'shops' && (
+        <PageHeader
+          discColor="#f1c04e"
+          title={t('Disquaires')}
+          subtitle={t('Les magasins de disques autour de toi, ou de l’endroit que tu cherches.')}
+        />
+      )}
       {route.name === 'friends' && (
         <PageHeader
           discColor="#f09aaa"
@@ -1371,6 +1490,13 @@ export default function App() {
       >
         {!isMessenger && (
           <InstallBanner mode={install.mode} onInstall={install.install} onDismiss={install.dismiss} />
+        )}
+
+        {/* --- Disquaires (la carte ne se charge qu'ici) --- */}
+        {route.name === 'shops' && (
+          <Suspense fallback={<div className="h-[48vh] animate-pulse rounded-3xl bg-raised" />}>
+            <RecordShops />
+          </Suspense>
         )}
 
         {/* --- Salons --- */}
@@ -1397,6 +1523,7 @@ export default function App() {
             onMessage={(id) => navigate(paths.chat(id))}
             statsOf={statsOf}
             activity={friendActivity}
+            birthdays={upcomingBirthdays}
             onInvite={inviteFriend}
             onToast={toast}
             offline={!online}
@@ -1461,6 +1588,29 @@ export default function App() {
           </p>
         )}
 
+        {route.name === 'home' && !room && !friend && wrappedFresh && (
+          <div className="keep-day mb-8 flex items-center gap-3 rounded-3xl p-4 pl-5 text-[#f5f1e8]" style={{ background: 'linear-gradient(150deg,#1d4a3a,#0c1f18)' }}>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] tracking-[0.18em] text-[#f1c04e]">
+                {wrappedFresh.period.kind === 'year' ? t('TON WRAPPED DE L’ANNÉE EST LÀ') : t('NOUVEAU WRAPPED')}
+              </p>
+              <p className="font-display text-xl font-black uppercase leading-tight">{t('Ton {period} en vinyles', { period: periodLabel(wrappedFresh.period) })}</p>
+            </div>
+            <button onClick={() => openWrapped(wrappedFresh)} className="shrink-0 rounded-full bg-[#f1c04e] px-4 py-2 text-sm font-bold text-[#1b2420]">
+              {t('Voir')}
+            </button>
+            <button
+              onClick={() => {
+                markWrappedSeen(wrappedFresh.id)
+              }}
+              aria-label={t('Masquer')}
+              className="-mr-1 shrink-0 rounded-full p-2 text-[#c8d2ca] hover:text-white"
+            >
+              <CloseIcon width={16} height={16} />
+            </button>
+          </div>
+        )}
+
         <section ref={listRef} className="scroll-mt-4">
           <ShelfTabs
             tab={tab}
@@ -1472,6 +1622,15 @@ export default function App() {
             actions={
               (myItems.length > 0 || all.length > 0) && (
                 <div className="flex shrink-0 items-center gap-2">
+                  {loansCount > 0 && (
+                    <button
+                      onClick={() => setLoansOpen(true)}
+                      className="rounded-full border border-line px-3 py-1 text-xs font-bold transition hover:border-accent"
+                    >
+                      {tn(loansCount, '{n} disque prêté', '{n} disques prêtés')}
+                      {loansLate > 0 && <span className="keep-day ml-1.5 inline-block h-2 w-2 rounded-full bg-coral align-middle" />}
+                    </button>
+                  )}
                   {(missingCount > 0 || refreshing) && (
                     <button
                       onClick={refreshInfos}
@@ -1494,7 +1653,19 @@ export default function App() {
               )
             }
             mobileActions={
-              (missingCount > 0 || refreshing) && (
+              (missingCount > 0 || refreshing || loansCount > 0) && (
+                <div className="flex flex-wrap gap-2">
+                {loansCount > 0 && (
+                    <button
+                      onClick={() => setLoansOpen(true)}
+                      className="rounded-full border border-line px-3 py-1 text-xs font-bold transition hover:border-accent"
+                    >
+                      {tn(loansCount, '{n} disque prêté', '{n} disques prêtés')}
+                      {loansLate > 0 && <span className="keep-day ml-1.5 inline-block h-2 w-2 rounded-full bg-coral align-middle" />}
+                    </button>
+                  )}
+                  
+                {(missingCount > 0 || refreshing) && (
                 <button
                   onClick={refreshInfos}
                   disabled={!!refreshing}
@@ -1505,6 +1676,8 @@ export default function App() {
                     ? t('Mise à jour {done}/{total}…', { done: refreshing.done, total: refreshing.total })
                     : t('Compléter les infos ({missingCount})', { missingCount })}
                 </button>
+                )}
+                </div>
               )
             }
           />
@@ -1580,6 +1753,9 @@ export default function App() {
                 onReset={resetFilters}
                 onShare={() => setShareOpen(true)}
                 shareDisabled={visible.length === 0}
+                view={view}
+                onView={setView}
+                onCrate={visible.length > 1 ? () => setCrateOpen(true) : undefined}
                 placeholder={t('Chercher dans {v1}', { v1: friend ? (tab === 'wish' ? t('les souhaits de {name}', { name: friend.name }) : t('les disques de {name}', { name: friend.name }))
                   : room ? (tab === 'wish' ? t('les souhaits du salon') : t('les collections du salon'))
                   : tab === 'wish' ? t('mes souhaits') : t('ma collection') })}
@@ -1599,11 +1775,8 @@ export default function App() {
             </ul>
           ) : all.length === 0 ? (
             <div className="py-16 text-center">
-              <div
-                className="vinyl-disc mx-auto h-24 w-24 animate-slow-spin"
-                style={{ '--disc-label': tab === 'wish' ? '#ec5b3e' : '#f1c04e' }}
-              />
-              <p className="mt-6 font-display text-2xl font-bold uppercase">
+              <Illustration kind={!online ? 'offline' : room ? 'room' : tab === 'wish' ? 'crate' : 'shelf'} className="animate-fade-up" />
+              <p className="mt-5 font-display text-2xl font-bold uppercase">
                 {online ? emptyText[0] : t('Pas de connexion')}
               </p>
               <p className="mt-1 text-sm text-muted">
@@ -1635,6 +1808,7 @@ export default function App() {
             />
           ) : visible.length === 0 ? (
             <div className="py-10 text-center">
+              <Illustration kind="search" className="mb-4 h-28 w-auto" />
               {canSearchToAdd ? (
                 <>
                   {/* Sans doute tapé ici pour ajouter un disque : on propose la bonne barre */}
@@ -1693,6 +1867,25 @@ export default function App() {
               <p className="-mt-2 mb-5 text-sm text-muted">{t('Tu veux ajouter un disque ?')}{' '}<button onClick={() => searchToAdd(search.trim())} className="font-medium text-accent underline-offset-4 hover:underline">{t('Chercher « {trim} » pour l’ajouter', { trim: search.trim() })}</button>
               </p>
             )}
+            {view === 'wall' ? (
+              /* Mur de pochettes : toutes les pochettes, serrées, sans texte */
+              <ul className="-mx-5 grid grid-cols-4 gap-0.5 sm:-mx-8 sm:grid-cols-6 lg:mx-0 lg:grid-cols-8 lg:gap-1" aria-label={t('Mur de pochettes')}>
+                {visible.map((v) => (
+                  <li key={v.key}>
+                    <button
+                      onClick={() => setDetailKey(v.key)}
+                      aria-label={`${v.title}, ${v.artist}`}
+                      title={`${v.title} · ${v.artist}`}
+                      className="group relative block w-full overflow-hidden"
+                    >
+                      <Cover url={v.cover_url} className="aspect-square w-full transition duration-300 group-hover:scale-105" />
+                      {isNewCard(v) && <span className="keep-day absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-coral ring-2 ring-white" />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+            <>
             <ul className={gridClass}>
               {pageItems.map((v, i) => (
                 <VinylCard
@@ -1710,6 +1903,7 @@ export default function App() {
                   onMeToo={statusOf(v) ? undefined : () => addItem(v, tab)}
                   gift={giftStateOf(v)}
                   isNew={isNewCard(v)}
+                  lentTo={lentToOf(v)}
                 />
               ))}
             </ul>
@@ -1721,10 +1915,24 @@ export default function App() {
               onPage={goToPage}
             />
             </>
+            )}
+            </>
           )}
           </>
           )}
         </section>
+
+        {/* Sorties à venir des artistes de ma liste */}
+        {route.name === 'home' && !loading && myItems.length > 0 && (
+          <ComingSoon
+            myItems={myItems.filter((it) => !it.demo)}
+            online={online}
+            onAdd={(r) => {
+              searchToAdd(`${r.artist} ${r.title}`)
+              if (!window.matchMedia('(max-width: 767px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          />
+        )}
 
         {/* Suggestions, sous ma liste */}
         {route.name === 'home' && !loading && (
@@ -1752,8 +1960,48 @@ export default function App() {
           onGotIt={() => gotIt(detailVinyl.myItem)}
           onNote={() => setNoteTarget(detailVinyl)}
           onEdition={() => setEditionTarget(detailVinyl)}
+          onShops={() => {
+            setDetailKey(null)
+            navigate(paths.shops)
+          }}
           onMeToo={() => addItem(detailVinyl, tab)}
           gifts={giftRowsOf(detailVinyl)}
+          extra={
+            detailVinyl.mine && detailVinyl.myItem?.status === 'owned' && !loansApi.missing ? (
+              <LoanBlock
+                loan={loansApi.byVinyl.get(String(detailVinyl.myItem.id))}
+                friends={friendsApi.friends}
+                people={people}
+                offline={!online}
+                onLend={async (who) => {
+                  const err = await loansApi.lend(detailVinyl.myItem.id, who)
+                  toast(err || t('Prêt noté'), err ? 'error' : 'success')
+                  return !err
+                }}
+                onReturn={async () => {
+                  const err = await loansApi.giveBack(loansApi.byVinyl.get(String(detailVinyl.myItem.id)))
+                  toast(err || t('Content de le revoir !'), err ? 'error' : 'success')
+                  return !err
+                }}
+                onAskBack={async () => {
+                  // Un message dans sa messagerie (avec le disque), donc une notification aussi
+                  const loan = loansApi.byVinyl.get(String(detailVinyl.myItem.id))
+                  const who = people.get(loan.borrower_id)
+                  const body = loan.due_date && isLate(loan)
+                    ? t('Coucou ! Tu peux me rendre « {title} » ? Il devait revenir le {date}.', { title: detailVinyl.title, date: shortDate(loan.due_date) })
+                    : t('Coucou ! Tu peux me rendre « {title} » quand tu as fini de l’écouter ?', { title: detailVinyl.title })
+                  const res = await messagesApi.send(loan.borrower_id, { body, vinyl: vinylPayload(detailVinyl) })
+                  if (res?.error) {
+                    toast(res.error, 'error')
+                    return false
+                  }
+                  await loansApi.markAsked(loan)
+                  toast(t('Demande envoyée à {name}', { name: who?.name || '' }), 'success')
+                  return true
+                }}
+              />
+            ) : null
+          }
           onReserve={async (row) => {
             const err = await gifts.reserve(row.vinylId)
             toast(err || t('Réservé : {name} ne le saura pas', { name: row.owner.name }), err ? 'error' : 'success')
@@ -1771,7 +2019,7 @@ export default function App() {
             room
               ? t('{listLabel} du salon « {name} »', { listLabel, name: room.name })
               : friend
-                ? `${listLabel} de ${friend.name}`
+                ? t('{listLabel} de {name}', { listLabel, name: friend.name })
                 : tab === 'wish' ? t('Mes souhaits vinyles') : t('Ma collection de vinyles')
           }
           filtered={hasFilters}
@@ -1814,6 +2062,29 @@ export default function App() {
           onRemovePhoto={removePhoto}
           onChangeEmail={auth.changeEmail}
           onChangePassword={auth.changePassword}
+          birthday={birthdaysApi.missing ? null : birthdaysApi.mine}
+          onSaveBirthday={
+            birthdaysApi.missing
+              ? undefined
+              : async (v) => {
+                  const err = await birthdaysApi.setMine(v)
+                  toast(err || (v ? t('Anniversaire enregistré') : t('Anniversaire effacé')), err ? 'error' : 'success')
+                }
+          }
+          onWrapped={() => {
+            setProfileOpen(false)
+            setWrappedArchive(true)
+          }}
+          wrappedNew={[...wrappedReleased.years, ...wrappedReleased.months].filter(wrappedIsNew).length}
+          loansCount={loansApi.missing ? 0 : loansApi.loans.length}
+          onLoans={
+            loansApi.missing
+              ? undefined
+              : () => {
+                  setProfileOpen(false)
+                  setLoansOpen(true)
+                }
+          }
           onLogout={handleSignOut}
           onReplayTour={() => {
             setProfileOpen(false)
@@ -1847,6 +2118,33 @@ export default function App() {
           onToast={toast}
           offline={!online}
         />
+      )}
+      {wrappedArchive && (
+        <WrappedArchive released={wrappedReleased} isNew={wrappedIsNew} onOpen={openWrapped} onClose={() => setWrappedArchive(false)} />
+      )}
+      {wrappedOpen && <WrappedView data={wrappedOpen} name={me.name} onToast={toast} onClose={() => setWrappedOpen(null)} />}
+      {loansOpen && (
+        <LoansSheet
+          loans={loansApi.loans}
+          vinylOf={(id) => myItems.find((it) => String(it.id) === String(id))}
+          people={people}
+          offline={!online}
+          onOpen={(it) => {
+            setLoansOpen(false)
+            setDetailKey(itemKey(it))
+          }}
+          onReturn={async (loan) => {
+            const err = await loansApi.giveBack(loan)
+            toast(err || t('Content de le revoir !'), err ? 'error' : 'success')
+          }}
+          onClose={() => setLoansOpen(false)}
+        />
+      )}
+      {celebrate && (
+        <Celebrate vinyl={celebrate.vinyl} count={celebrate.count} sound={player.enabled} onDone={endCelebrate} />
+      )}
+      {crateOpen && visible.length > 0 && (
+        <CrateView items={visible} mode={tab} onOpen={(key) => setDetailKey(key)} onClose={() => setCrateOpen(false)} />
       )}
       {editionTarget && (
         <EditionSheet

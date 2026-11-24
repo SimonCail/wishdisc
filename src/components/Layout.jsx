@@ -35,15 +35,25 @@ export const ChatIcon = (p) => (
   </svg>
 )
 
+export const ShopIcon = (p) => (
+  <svg {...base} {...p}>
+    <path d="M4 9.5 5.5 4h13L20 9.5" />
+    <path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0" />
+    <path d="M5.5 11.5V20h13v-8.5" />
+    <circle cx="12" cy="16" r="2.2" />
+  </svg>
+)
+
 export const NAV = [
   { name: 'home', label: t('Ma liste'), Icon: RecordIcon },
   { name: 'rooms', label: t('Salons'), Icon: RoomsIcon },
   { name: 'friends', label: t('Amis'), Icon: FriendsIcon },
+  { name: 'shops', label: t('Disquaires'), Icon: ShopIcon },
   { name: 'messages', label: t('Messages'), Icon: ChatIcon },
 ]
 // Page → onglet allumé
 export const sectionOf = (route) =>
-  ({ home: 'home', rooms: 'rooms', room: 'rooms', friends: 'friends', friend: 'friends', messages: 'messages', chat: 'messages' })[
+  ({ home: 'home', rooms: 'rooms', room: 'rooms', friends: 'friends', friend: 'friends', messages: 'messages', chat: 'messages', shops: 'shops' })[
     route
   ] ?? 'home'
 
@@ -161,12 +171,12 @@ export function TabBar({ section, badges, onNavigate }) {
         paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
       }}
     >
-      <div className="pointer-events-auto relative mx-auto grid max-w-md grid-cols-4 rounded-[1.75rem] border border-line/70 bg-surface/80 p-1.5 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55)] backdrop-blur-xl backdrop-saturate-150">
+      <div className="pointer-events-auto relative mx-auto grid max-w-md grid-cols-5 rounded-[1.75rem] border border-line/70 bg-surface/80 p-1.5 shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55)] backdrop-blur-xl backdrop-saturate-150">
         {/* La pastille de l'onglet actif */}
         <span
           aria-hidden="true"
           className="tab-marker absolute bottom-1.5 left-1.5 top-1.5 rounded-[1.375rem] bg-accent shadow-[0_6px_16px_-6px_var(--color-accent)]"
-          style={{ width: 'calc((100% - 0.75rem) / 4)', transform: `translateX(${index * 100}%)` }}
+          style={{ width: `calc((100% - 0.75rem) / ${NAV.length})`, transform: `translateX(${index * 100}%)` }}
         />
         {NAV.map(({ name, label, Icon }) => {
           const active = section === name

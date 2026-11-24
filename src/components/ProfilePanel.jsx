@@ -4,6 +4,7 @@ import AvatarCropper from './AvatarCropper'
 import ArtistAvatarPicker from './ArtistAvatarPicker'
 import SpinningDisc from './SpinningDisc'
 import { ThemeSettings, SoundSetting } from './ThemePicker'
+import { BirthdayField } from './Birthdays'
 import { LANGS, currentLang, setLang } from '../lib/i18n'
 import { pushAvailability } from '../lib/push'
 import { CloseIcon, CheckIcon } from './Icons'
@@ -222,6 +223,7 @@ export default function ProfilePanel({
   me, email, myCounts, rooms, myArtists, myDiscs = [], offline, onSetTurntable,
   onSaveProfile, onSetPhoto, onSetArtist, onRemovePhoto, onChangeEmail, onChangePassword,
   onLogout, onImport, onDeleteAccount, onClose, onToast, onReplayTour,
+  birthday = null, onSaveBirthday, onWrapped, wrappedNew = 0, loansCount = 0, onLoans,
 }) {
   const [name, setName] = useState(me.name)
   const [color, setColor] = useState(me.color)
@@ -399,7 +401,7 @@ export default function ProfilePanel({
   // Les rubriques des réglages
   const pushState = pushAvailability()
   const pages = [
-    { id: 'profile', icon: 'profile', title: t('Profil'), hint: t('Prénom, couleur') },
+    { id: 'profile', icon: 'profile', title: t('Profil'), hint: t('Prénom, couleur, anniversaire') },
     { id: 'turntable', icon: 'disc', title: t('Platine'), hint: me.turntable?.mode === 'disc' ? me.turntable.title : me.turntable?.mode === 'random' ? t('Au hasard') : t('Classique') },
     { id: 'look', icon: 'look', title: t('Apparence'), hint: t('Jour, nuit') },
     { id: 'lang', icon: 'lang', title: t('Langue'), hint: LANGS.find((l) => l.code === currentLang())?.name },
@@ -517,6 +519,32 @@ export default function ProfilePanel({
                 <p className="rounded-2xl bg-raised px-4 py-3 text-sm text-muted">{t('Hors-ligne : les modifications du profil sont désactivées.')}</p>
               )}
 
+              {/* Raccourcis : mon année en vinyles, mes prêts */}
+              {(onWrapped || onLoans) && (
+                <div className="grid grid-cols-2 gap-2">
+                  {onWrapped && (
+                    <button
+                      onClick={onWrapped}
+                      className="keep-day rounded-2xl bg-[#1d4a3a] p-3.5 text-left text-[#f5f1e8] transition hover:brightness-110"
+                    >
+                      <span className="flex items-center justify-between font-mono text-[10px] tracking-[0.16em] text-[#f1c04e]">
+                        WRAPPED
+                        {wrappedNew > 0 && <span className="rounded-full bg-coral px-1.5 font-sans text-[10px] font-bold tracking-normal text-white">{wrappedNew}</span>}
+                      </span>
+                      <span className="mt-1 block font-bold leading-tight">{t('Mes Wrapped')}</span>
+                    </button>
+                  )}
+                  {onLoans && (
+                    <button onClick={onLoans} className="rounded-2xl border border-line bg-surface p-3.5 text-left transition hover:border-accent">
+                      <span className="block font-mono text-[10px] tracking-[0.16em] text-muted">{t('PRÊTS')}</span>
+                      <span className="mt-1 block font-bold leading-tight">
+                        {loansCount ? tn(loansCount, '{n} disque prêté', '{n} disques prêtés') : t('Aucun disque prêté')}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* La liste des rubriques : chacune s'ouvre sur sa propre page */}
               <nav aria-label={t('Réglages')} className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
                 {pages.map((x) => (
@@ -619,6 +647,13 @@ export default function ProfilePanel({
               </div>
             </form>
                 </Section>
+              )}
+              {page === 'profile' && onSaveBirthday && (
+                <div className="mt-4">
+                  <Section title={t('Ton anniversaire')}>
+                    <BirthdayField value={birthday} offline={offline} onSave={onSaveBirthday} />
+                  </Section>
+                </div>
               )}
 
               {page === 'turntable' && (

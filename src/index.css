@@ -374,3 +374,164 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
+
+/* Fouiller le bac : la pochette du dessus arrive du bas (suivant) ou du haut (précédent) */
+@keyframes crate-next {
+  from { transform: translateY(70px) rotate(4deg); opacity: 0; }
+}
+@keyframes crate-prev {
+  from { transform: translateY(-90px) rotate(-6deg) scale(0.92); opacity: 0; }
+}
+.crate-next { animation: crate-next 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.crate-prev { animation: crate-prev 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .crate-next, .crate-prev { animation: none; }
+}
+
+/* Souhait exaucé : le vinyle sort de la pochette, les confettis tombent */
+@keyframes celebrate-in { from { opacity: 0; } }
+@keyframes celebrate-disc {
+  0% { transform: translateX(40px) rotate(0deg); }
+  60% { transform: translateX(-46px) rotate(220deg); }
+  100% { transform: translateX(-40px) rotate(260deg); }
+}
+@keyframes confetti {
+  from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  to { transform: translateY(105vh) rotate(var(--spin, 360deg)); opacity: 0.9; }
+}
+.celebrate-in { animation: celebrate-in 0.25s ease-out; }
+.celebrate-disc { animation: celebrate-disc 1.1s cubic-bezier(0.2, 0.8, 0.3, 1) 0.15s both; }
+.confetti { animation: confetti 2.2s cubic-bezier(0.3, 0.6, 0.6, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .celebrate-disc, .confetti { animation: none; }
+  .confetti { display: none; }
+}
+
+/* Disquaires : repères sur la carte */
+.shop-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: #1d4a3a;
+  color: #f5f1e8;
+  border: 2.5px solid #fff;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.35);
+  font: 900 12px/1 'Archivo', system-ui, sans-serif;
+  transition: transform 0.15s;
+}
+.shop-pin:hover {
+  transform: scale(1.1);
+}
+.shop-pin.on {
+  background: #f1c04e;
+  color: #1b2420;
+  font-size: 15px;
+  border-width: 3px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4), 0 0 0 6px rgb(241 192 78 / 0.3);
+}
+.shop-pin-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 5px 11px;
+  border-radius: 9999px;
+  background: #1b2420;
+  color: #f5f1e8;
+  font: 700 12px/1.2 'Archivo', system-ui, sans-serif;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+.shop-pin-label::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: #1b2420;
+}
+/* Endroit cherché : épingle */
+.place-pin {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #ec5b3e;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+}
+.place-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 9999px;
+  background: #fff;
+}
+/* Moi : point bleu qui pulse */
+.me-dot {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+}
+.me-dot::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+  background: rgb(59 130 246 / 0.35);
+  animation: me-pulse 2s ease-out infinite;
+}
+@keyframes me-pulse {
+  from { transform: scale(0.4); opacity: 1; }
+  to { transform: scale(1.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .me-dot::before { animation: none; }
+}
+/* Fond de carte OpenStreetMap adouci (et assombri la nuit) */
+.osm-tiles {
+  filter: saturate(0.45) contrast(0.92) brightness(1.04) sepia(0.08);
+}
+:root[data-theme='dark'] .osm-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.88) saturate(0.35);
+}
+.shop-map {
+  background: var(--color-raised);
+}
+.shop-map .leaflet-control-attribution {
+  border-radius: 9999px 0 0 0;
+  padding: 2px 10px;
+  font-size: 10px;
+  background: rgb(255 255 255 / 0.75);
+  backdrop-filter: blur(6px);
+}
+:root[data-theme='dark'] .shop-map .leaflet-control-attribution {
+  background: rgb(16 23 20 / 0.75);
+  color: #9aa398;
+}
+:root[data-theme='dark'] .shop-map .leaflet-control-attribution a {
+  color: #86c9a6;
+}
+.leaflet-container {
+  font: inherit;
+}
