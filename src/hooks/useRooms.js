@@ -1,29 +1,30 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { ROOMS_KEY, readJSON, writeJSON } from '../lib/cache'
+import { t } from '../lib/i18n'
 
 function roomMessage(error) {
   if (!error) return null
   const msg = error.message || ''
-  if (msg.includes('room_not_found')) return 'Aucun salon avec ce code.'
-  if (msg.includes('join_request_required')) return 'Recharge la page pour avoir la dernière version de l’app.'
-  if (msg.includes('request_not_found')) return 'Cette demande n’existe plus (annulée entre-temps ?).'
-  if (msg.includes('not_room_owner')) return 'Seul le responsable du salon peut faire ça.'
-  if (msg.includes('cannot_remove_self')) return 'Pour partir toi-même, utilise « Quitter le salon ».'
-  if (msg.includes('not_a_member')) return 'Cette personne ne fait plus partie du salon.'
+  if (msg.includes('room_not_found')) return t('Aucun salon avec ce code.')
+  if (msg.includes('join_request_required')) return t('Recharge la page pour avoir la dernière version de l’app.')
+  if (msg.includes('request_not_found')) return t('Cette demande n’existe plus (annulée entre-temps ?).')
+  if (msg.includes('not_room_owner')) return t('Seul le responsable du salon peut faire ça.')
+  if (msg.includes('cannot_remove_self')) return t('Pour partir toi-même, utilise « Quitter le salon ».')
+  if (msg.includes('not_a_member')) return t('Cette personne ne fait plus partie du salon.')
   // Fonction ou colonne absente : le script 6 n'a pas encore été lancé
   if (error.code === 'PGRST202' || error.code === '42883' || error.code === '42703' || /function .* does not exist|could not find the function/i.test(msg)) {
-    return 'Lance d’abord le script 6-gestion-salons.sql dans Supabase.'
+    return t('Lance d’abord le script 6-gestion-salons.sql dans Supabase.')
   }
   // Photo du salon (stockage Supabase)
   if (/bucket not found/i.test(msg) || /rooms_cover_source|rooms_cover_discogs/.test(msg)) {
-    return 'Lance d’abord le script 8-photo-salon.sql dans Supabase.'
+    return t('Lance d’abord le script 8-photo-salon.sql dans Supabase.')
   }
-  if (/tenant/i.test(msg)) return 'Le stockage de photos de Supabase ne répond pas pour l’instant (même souci que pour la photo de profil).'
-  if (/exceeded the maximum allowed size|payload too large/i.test(msg)) return 'Photo trop lourde, essaie une autre image.'
-  if (/row-level security|unauthorized|403/i.test(msg)) return 'Seul le responsable du salon peut changer sa photo.'
-  if (!navigator.onLine) return 'Pas de connexion internet.'
-  return msg || 'Ça n’a pas marché, réessaie.'
+  if (/tenant/i.test(msg)) return t('Le stockage de photos de Supabase ne répond pas pour l’instant (même souci que pour la photo de profil).')
+  if (/exceeded the maximum allowed size|payload too large/i.test(msg)) return t('Photo trop lourde, essaie une autre image.')
+  if (/row-level security|unauthorized|403/i.test(msg)) return t('Seul le responsable du salon peut changer sa photo.')
+  if (!navigator.onLine) return t('Pas de connexion internet.')
+  return msg || t('Ça n’a pas marché, réessaie.')
 }
 
 // Dossier de stockage des photos de salon (script 8)
@@ -151,7 +152,7 @@ export function useRooms(userId) {
     const { data, error } = await supabase.rpc('request_join_room', { room_code: code })
     if (error) {
       if (error.code === 'PGRST202' || /could not find the function/i.test(error.message || '')) {
-        return { error: 'Lance d’abord le script 15-demandes-salon.sql dans Supabase.' }
+        return { error: t('Lance d’abord le script 15-demandes-salon.sql dans Supabase.') }
       }
       return { error: roomMessage(error) }
     }

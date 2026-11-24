@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { t } from './i18n'
 
 // --- Notifications sur le téléphone (Web Push) ---
 // La clé publique VAPID vient de .env.local / Vercel (VITE_VAPID_PUBLIC_KEY).
@@ -84,13 +85,13 @@ export async function disablePush() {
 export function pushErrorMessage(code) {
   return (
     {
-      denied: 'Les notifications sont bloquées. Autorise-les pour Wishdisc dans les réglages du téléphone.',
-      dismissed: 'Notifications non activées.',
-      install: 'Sur iPhone, installe d’abord l’app sur l’écran d’accueil (Partager → « Sur l’écran d’accueil »).',
-      unsupported: 'Ce navigateur ne gère pas les notifications.',
-      'not-configured': 'Notifications pas encore configurées (clé VAPID manquante).',
-      'no-sw': 'Les notifications ne marchent que sur l’app en ligne, pas en « npm run dev ».',
-      'missing-table': 'Lance d’abord le script 21-notifications.sql dans Supabase.',
+      denied: t('Les notifications sont bloquées. Autorise-les pour Wishdisc dans les réglages du téléphone.'),
+      dismissed: t('Notifications non activées.'),
+      install: t('Sur iPhone, installe d’abord l’app sur l’écran d’accueil (Partager → « Sur l’écran d’accueil »).'),
+      unsupported: t('Ce navigateur ne gère pas les notifications.'),
+      'not-configured': t('Notifications pas encore configurées (clé VAPID manquante).'),
+      'no-sw': t('Les notifications ne marchent que sur l’app en ligne, pas en « npm run dev ».'),
+      'missing-table': t('Lance d’abord le script 21-notifications.sql dans Supabase.'),
     }[code] || code
   )
 }

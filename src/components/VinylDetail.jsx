@@ -9,6 +9,7 @@ import { ENVIE } from '../lib/envie'
 import { editionTags } from '../lib/edition'
 import EditionTags from './EditionTags'
 import { btn } from '../lib/ui'
+import { t, tn, locale } from '../lib/i18n'
 
 function PlayIcon(p) {
   return (
@@ -39,14 +40,14 @@ const toSeconds = (d) => {
 
 // Positions « A1, A2, B1… » -> faces du vinyle ; sinon une seule liste
 function groupBySide(tracks) {
-  const songs = tracks.filter((t) => t.position) // on ignore les titres de section de Discogs
-  const sides = songs.map((t) => /^([A-Z])\d*/i.exec(t.position)?.[1]?.toUpperCase())
+  const songs = tracks.filter((tx) => tx.position) // on ignore les titres de section de Discogs
+  const sides = songs.map((tx) => /^([A-Z])\d*/i.exec(tx.position)?.[1]?.toUpperCase())
   if (sides.some((s) => !s) || new Set(sides).size < 2) return [{ side: null, tracks: songs }]
   const groups = []
-  songs.forEach((t, i) => {
+  songs.forEach((tx, i) => {
     const last = groups[groups.length - 1]
-    if (last && last.side === sides[i]) last.tracks.push(t)
-    else groups.push({ side: sides[i], tracks: [t] })
+    if (last && last.side === sides[i]) last.tracks.push(tx)
+    else groups.push({ side: sides[i], tracks: [tx] })
   })
   return groups
 }
@@ -93,7 +94,7 @@ function useFitTitle(ref, text) {
 }
 
 const sinceLabel = (iso) =>
-  new Date(iso).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  new Date(iso).toLocaleDateString(locale(), { month: 'long', year: 'numeric' })
 
 // Fiche d'un disque. onSync n'est appelé que pour mes disques (je ne modifie que les miens).
 // Les actions (étoiles, « Je l'ai », note, « Moi aussi ») sont les mêmes que sur la carte.
@@ -165,7 +166,7 @@ export default function VinylDetail({
   const sides = useMemo(() => groupBySide(details?.tracklist ?? []), [details])
   const trackCount = sides.reduce((n, g) => n + g.tracks.length, 0)
   const totalMin = useMemo(() => {
-    const secs = sides.flatMap((g) => g.tracks).map((t) => toSeconds(t.duration))
+    const secs = sides.flatMap((g) => g.tracks).map((tx) => toSeconds(tx.duration))
     if (!secs.length || secs.some((s) => s == null)) return null
     return Math.round(secs.reduce((a, b) => a + b, 0) / 60)
   }, [sides])
@@ -198,7 +199,7 @@ export default function VinylDetail({
           </p>
           <button
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t('Fermer')}
             className="pointer-events-auto shrink-0 rounded-full bg-surface/80 p-1.5 text-muted shadow-sm backdrop-blur transition hover:bg-raised hover:text-paper"
           >
             <CloseIcon width={18} height={18} />
@@ -243,8 +244,9 @@ export default function VinylDetail({
                 {inRoom && owners.length > 0 && (
                   <p className="mt-2 flex items-center gap-2 text-xs text-muted">
                     <AvatarStack members={owners} size={22} />
-                    {mode === 'wish' ? 'Voulu par ' : 'Dans la collection de '}
-                    {owners.map((o) => o.name).join(', ')}
+                    {mode === 'wish'
+                      ? t('Voulu par {names}', { names: owners.map((o) => o.name).join(', ') })
+                      : t('Dans la collection de {names}', { names: owners.map((o) => o.name).join(', ') })}
                   </p>
                 )}
               </div>
@@ -253,8 +255,8 @@ export default function VinylDetail({
             {/* Niveau d'envie : 3 choix nommés (toucher le choix actif l'enlève) */}
             {mine && mode === 'wish' && (
               <div className="mt-5">
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">Mon envie</p>
-                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Mon envie">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">{t('Mon envie')}</p>
+                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('Mon envie')}>
                   {[1, 2, 3].map((n) => {
                     const on = vinyl.priority === n
                     return (
@@ -277,7 +279,7 @@ export default function VinylDetail({
                     )
                   })}
                 </div>
-                <p className="mt-2 text-xs text-muted">Tes proches le voient, pour savoir quoi t’offrir en premier.</p>
+                <p className="mt-2 text-xs text-muted">{t('Tes proches le voient, pour savoir quoi t’offrir en premier.')}</p>
               </div>
             )}
             {!mine && mode === 'wish' && vinyl.priority > 0 && (
@@ -286,8 +288,7 @@ export default function VinylDetail({
                   {Array.from({ length: vinyl.priority }).map((_, i) => (
                     <StarIcon key={i} filled width={15} height={15} />
                   ))}
-                </span>
-                Envie : <span className="font-bold text-paper">{ENVIE[vinyl.priority]}</span>
+                </span>{t('Envie :')} <span className="font-bold text-paper">{ENVIE[vinyl.priority]}</span>
               </p>
             )}
 
@@ -298,22 +299,21 @@ export default function VinylDetail({
                 className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-line p-3.5 text-left transition hover:border-accent hover:bg-raised/50"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-bold uppercase tracking-[0.12em] text-muted">Mon édition</span>
+                  <span className="block text-xs font-bold uppercase tracking-[0.12em] text-muted">{t('Mon édition')}</span>
                   {editionList.length ? (
                     <EditionTags tags={editionList} size="md" className="mt-2" />
                   ) : (
-                    <span className="mt-1 block text-sm text-muted">
-                      Couleur, signé, numéroté, exclu…{mode === 'wish' ? ' ou peu importe ?' : ''}
+                    <span className="mt-1 block text-sm text-muted">{t('Couleur, signé, numéroté, exclu…')}{mode === 'wish' ? ' ' + t('ou peu importe ?') : ''}
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 text-sm font-bold text-accent">{editionList.length ? 'Modifier' : 'Préciser'}</span>
+                <span className="shrink-0 text-sm font-bold text-accent">{editionList.length ? t('Modifier') : t('Préciser')}</span>
               </button>
             ) : (
               editionList.length > 0 && (
                 <div className="mt-5">
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
-                    {owners.length > 1 ? `L’édition de ${owners.find((o) => o.id === vinyl.owner_id)?.name ?? 'son propriétaire'}` : 'Son édition'}
+                    {owners.length > 1 ? t('L’édition de {name}', { name: owners.find((o) => o.id === vinyl.owner_id)?.name ?? t('son propriétaire') }) : t('Son édition')}
                   </p>
                   <EditionTags tags={editionList} size="md" />
                 </div>
@@ -325,24 +325,21 @@ export default function VinylDetail({
               {mine && mode === 'wish' && (
                 <>
                   {/* Une action (pas un état) : bouton à contour, pour ne pas faire croire que c'est déjà fait */}
-                  <button onClick={onGotIt} className={btn.secondary} title="Je l'ai eu : passer dans ma collection">
-                    <ShelveIcon width={16} height={16} /> Je l'ai eu
-                  </button>
+                  <button onClick={onGotIt} className={btn.secondary} title={t('Je l\'ai eu : passer dans ma collection')}>
+                    <ShelveIcon width={16} height={16} />{' '}{t('Je l\'ai eu, je le range')}</button>
                 </>
               )}
               {mine && mode === 'owned' && vinyl.owned_at && (
-                <span className="rounded-full bg-raised px-3.5 py-2 text-sm text-muted">
-                  Dans ta collection depuis {sinceLabel(vinyl.owned_at)}
-                </span>
+                <span className="rounded-full bg-raised px-3.5 py-2 text-sm text-muted">{t('Dans ta collection depuis {sinceLabel}', { sinceLabel: sinceLabel(vinyl.owned_at) })}</span>
               )}
               {mine && (
                 <button onClick={onNote} className={btn.secondary}>
-                  <NoteIcon width={15} height={15} /> {vinyl.note ? 'Modifier la note' : 'Ajouter une note'}
+                  <NoteIcon width={15} height={15} /> {vinyl.note ? t('Modifier la note') : t('Ajouter une note')}
                 </button>
               )}
               {!mine && canAdd && (
                 <button onClick={onMeToo} className={btn.primary}>
-                  <PlusIcon width={16} height={16} /> {mode === 'wish' ? 'Moi aussi' : 'Je l’ai aussi'}
+                  <PlusIcon width={16} height={16} /> {mode === 'wish' ? t('Moi aussi') : t('Je l’ai aussi')}
                 </button>
               )}
             </div>
@@ -350,36 +347,27 @@ export default function VinylDetail({
             {gifts.length > 0 && (
               <div className="mt-5 rounded-2xl border border-line p-4">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-muted">
-                  <GiftIcon width={15} height={15} /> Offrir ce disque
-                </p>
+                  <GiftIcon width={15} height={15} />{' '}{t('Offrir ce disque')}</p>
                 <ul className="mt-3 space-y-2">
                   {gifts.map((row) => (
                     <li key={row.vinylId} className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm">
-                        Pour <span className="font-bold">{row.owner.name}</span>
+                      <span className="text-sm">{t('Pour {name}', { name: row.owner.name })}
                       </span>
                       {!row.reservedBy ? (
                         <button onClick={() => gift(row, true)} disabled={giftBusy === row.vinylId} className={btn.primary}>
-                          <GiftIcon width={16} height={16} /> Je l’offre
-                        </button>
+                          <GiftIcon width={16} height={16} />{' '}{t('Je l’offre')}</button>
                       ) : row.mine ? (
                         <span className="flex items-center gap-1">
-                          <span className="rounded-full bg-accent px-3 py-1.5 text-sm font-bold text-ink">Tu l’offres</span>
-                          <button onClick={() => gift(row, false)} disabled={giftBusy === row.vinylId} className={btn.quiet}>
-                            Annuler
-                          </button>
+                          <span className="rounded-full bg-accent px-3 py-1.5 text-sm font-bold text-ink">{t('Tu l’offres')}</span>
+                          <button onClick={() => gift(row, false)} disabled={giftBusy === row.vinylId} className={btn.quiet}>{t('Annuler')}</button>
                         </span>
                       ) : (
-                        <span className="keep-day rounded-full bg-sun px-3 py-1.5 text-sm font-bold text-paper">
-                          Réservé par {row.reserverName}
-                        </span>
+                        <span className="keep-day rounded-full bg-sun px-3 py-1.5 text-sm font-bold text-paper">{t('Réservé par {reserverName}', { reserverName: row.reserverName })}</span>
                       )}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 text-xs text-muted">
-                  {gifts.map((g) => g.owner.name).join(', ')} ne {gifts.length > 1 ? 'verront' : 'verra'} pas qu’il est réservé : la surprise est gardée.
-                </p>
+                <p className="mt-3 text-xs text-muted">{tn(gifts.length, '{names} ne verra pas qu’il est réservé : la surprise est gardée.', '{names} ne verront pas qu’il est réservé : la surprise est gardée.', { names: gifts.map((g) => g.owner.name).join(', ') })}</p>
               </div>
             )}
 
@@ -397,8 +385,7 @@ export default function VinylDetail({
               target="_blank"
               rel="noopener noreferrer"
               className="-mt-3 inline-flex items-center gap-1 text-xs text-muted underline-offset-4 transition hover:text-paper hover:underline"
-            >
-              Introuvable en magasin ? Les occasions sur Discogs <ArrowIcon width={12} height={12} />
+            >{t('Introuvable en magasin ? Les occasions sur Discogs')}{' '}<ArrowIcon width={12} height={12} />
             </a>
 
             {(genres.length > 0 || styles.length > 0) && (
@@ -409,9 +396,7 @@ export default function VinylDetail({
             )}
 
             {error && (
-              <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600">
-                Impossible de charger les détails : {error}
-              </p>
+              <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{t('Impossible de charger les détails : {error}', { error })}</p>
             )}
 
             {!details && !error && (
@@ -426,26 +411,24 @@ export default function VinylDetail({
             {trackCount > 0 && (
               <section>
                 <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <h3 className="text-xs font-medium uppercase tracking-[0.15em] text-muted">Titres</h3>
+                  <h3 className="text-xs font-medium uppercase tracking-[0.15em] text-muted">{t('Titres')}</h3>
                   <p className="font-mono text-[11px] text-muted">
-                    {trackCount} titre{trackCount > 1 ? 's' : ''}
-                    {totalMin ? ` · ${totalMin} min` : ''}
+                    {tn(trackCount, '{n} titre', '{n} titres')}
+                    {totalMin ? t('· {totalMin} min', { totalMin }) : ''}
                   </p>
                 </div>
                 {sides.map((g) => (
                   <div key={g.side ?? 'all'} className="mt-3 first:mt-0">
                     {g.side && (
                       <p className="mb-1 flex items-center gap-2 font-display text-sm font-black uppercase">
-                        <span className="vinyl-disc block h-4 w-4" style={{ '--disc-label': color }} aria-hidden="true" />
-                        Face {g.side}
-                      </p>
+                        <span className="vinyl-disc block h-4 w-4" style={{ '--disc-label': color }} aria-hidden="true" />{t('Face {side}', { side: g.side })}</p>
                     )}
                     <ol className="divide-y divide-line/70 text-sm">
-                      {g.tracks.map((t, i) => (
-                        <li key={`${t.position}-${i}`} className="flex items-baseline gap-3 rounded-lg py-2.5 transition hover:bg-raised/60">
-                          <span className="w-8 shrink-0 pl-1 font-mono text-xs text-muted">{t.position}</span>
-                          <span className="min-w-0 flex-1">{t.title}</span>
-                          {t.duration && <span className="shrink-0 pr-1 font-mono text-xs text-muted">{t.duration}</span>}
+                      {g.tracks.map((tx, i) => (
+                        <li key={`${tx.position}-${i}`} className="flex items-baseline gap-3 rounded-lg py-2.5 transition hover:bg-raised/60">
+                          <span className="w-8 shrink-0 pl-1 font-mono text-xs text-muted">{tx.position}</span>
+                          <span className="min-w-0 flex-1">{tx.title}</span>
+                          {tx.duration && <span className="shrink-0 pr-1 font-mono text-xs text-muted">{tx.duration}</span>}
                         </li>
                       ))}
                     </ol>
@@ -456,7 +439,7 @@ export default function VinylDetail({
 
             {/* Écouter */}
             <section>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-muted">Écouter</h3>
+              <h3 className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-muted">{t('Écouter')}</h3>
               <div className="flex flex-wrap gap-2">
                 {listenLinks(vinyl).map((l) => (
                   <a
@@ -495,8 +478,7 @@ export default function VinylDetail({
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-ink transition hover:bg-accent-soft"
-            >
-              Voir la fiche sur Discogs <ArrowIcon width={16} height={16} />
+            >{t('Voir la fiche sur Discogs')}{' '}<ArrowIcon width={16} height={16} />
             </a>
           </div>
         </div>

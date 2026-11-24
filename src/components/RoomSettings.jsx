@@ -3,6 +3,7 @@ import { Avatar } from './Avatar'
 import { RoomCover, CrownIcon, ROOM_COLORS, roomColor } from './Rooms'
 import { CloseIcon, CheckIcon, CopyIcon } from './Icons'
 import PhotoCropper from './PhotoCropper'
+import { t, tn } from '../lib/i18n'
 
 const field =
   'w-full rounded-2xl border border-line bg-ink px-4 py-3 text-paper outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15 disabled:opacity-60'
@@ -12,7 +13,7 @@ const ghostBtn =
   'rounded-full border border-line px-4 py-2 text-sm font-medium transition hover:border-accent hover:bg-raised disabled:opacity-50'
 
 const DISCOGS_IMAGE = /^https:\/\/i\.discogs\.com\//
-const norm = (t = '') => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const norm = (tx = '') => tx.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 const CameraIcon = () => (
   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.9"
@@ -77,13 +78,13 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
     const f = e.target.files?.[0]
     e.target.value = '' // pour pouvoir rechoisir la même photo
     if (!f) return
-    if (!f.type.startsWith('image/')) return setError('Choisis une image.')
-    if (f.size > 25 * 1024 * 1024) return setError('Photo trop lourde (25 Mo max).')
+    if (!f.type.startsWith('image/')) return setError(t('Choisis une image.'))
+    if (f.size > 25 * 1024 * 1024) return setError(t('Photo trop lourde (25 Mo max).'))
     setError(null)
     setPhotoFile(f)
   }
   async function sendPhoto(blob) {
-    if (await run('photo', () => actions.uploadCover(room.id, blob), 'Photo du salon mise à jour')) setPhotoFile(null)
+    if (await run('photo', () => actions.uploadCover(room.id, blob), t('Photo du salon mise à jour'))) setPhotoFile(null)
   }
 
   async function run(key, action, success) {
@@ -103,7 +104,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
   const saveName = (e) => {
     e.preventDefault()
     if (!nameDirty) return
-    run('name', () => actions.update(room.id, { name: name.trim() }), 'Salon renommé')
+    run('name', () => actions.update(room.id, { name: name.trim() }), t('Salon renommé'))
   }
 
   const others = room.members.filter((m) => m.id !== meId)
@@ -117,7 +118,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Gérer le salon"
+        aria-label={t('Gérer le salon')}
         className="animate-pop nice-scroll max-h-[94vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-3xl bg-ink shadow-2xl shadow-black/60 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -130,12 +131,11 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           />
           <div className="relative flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink/70">
-              <CrownIcon width={12} height={12} /> Gérer le salon
-            </span>
+              <CrownIcon width={12} height={12} />{' '}{t('Gérer le salon')}</span>
             <button
               onClick={onClose}
               disabled={!!busy}
-              aria-label="Fermer"
+              aria-label={t('Fermer')}
               className="rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink"
             >
               <CloseIcon width={20} height={20} />
@@ -144,7 +144,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           <div className="relative mt-6 flex items-end gap-5">
             {/* Clic sur la pochette (ou l'appareil photo) : choisir une photo, comme pour le profil */}
             <label
-              title="Changer la photo du salon"
+              title={t('Changer la photo du salon')}
               className={`group relative shrink-0 ${disabled ? 'pointer-events-none' : 'cursor-pointer'}`}
             >
               <input
@@ -152,7 +152,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                 accept="image/*"
                 onChange={pickPhoto}
                 disabled={disabled}
-                aria-label="Changer la photo du salon"
+                aria-label={t('Changer la photo du salon')}
                 className="sr-only"
               />
               <RoomCover
@@ -171,7 +171,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
             <div className="min-w-0 pb-1">
               <h2 className="font-display break-words text-4xl font-black uppercase leading-[0.88] sm:text-5xl">{room.name}</h2>
               <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-ink/75">
-                {room.members.length} membre{room.members.length > 1 ? 's' : ''} · code {room.code}
+                {tn(room.members.length, '{n} membre', '{n} membres')} · {t('code {code}', { code: room.code })}
               </p>
             </div>
           </div>
@@ -179,9 +179,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
 
         <div className="space-y-4 p-4 sm:p-6">
           {offline && (
-            <p className="rounded-2xl bg-raised px-4 py-3 text-sm text-muted">
-              Hors-ligne : les réglages du salon sont désactivés.
-            </p>
+            <p className="rounded-2xl bg-raised px-4 py-3 text-sm text-muted">{t('Hors-ligne : les réglages du salon sont désactivés.')}</p>
           )}
           {error && (
             <p role="alert" className="rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-600">
@@ -192,7 +190,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           {/* Demandes pour rejoindre */}
           {requests.length > 0 && (
             <Section
-              title="Demandes pour rejoindre"
+              title={t('Demandes pour rejoindre')}
               aside={<span className="rounded-full bg-coral px-2 py-0.5 font-mono text-xs font-bold text-white">{requests.length}</span>}
             >
               <ul className="-my-1 divide-y divide-line">
@@ -209,9 +207,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                         }}
                         disabled={offline || answering === req.person.id}
                         className="rounded-full px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50"
-                      >
-                        Refuser
-                      </button>
+                      >{t('Refuser')}</button>
                       <button
                         onClick={async () => {
                           setAnswering(req.person.id)
@@ -220,9 +216,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                         }}
                         disabled={offline || answering === req.person.id}
                         className="rounded-full bg-accent px-3.5 py-1.5 text-xs font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
-                      >
-                        Accepter
-                      </button>
+                      >{t('Accepter')}</button>
                     </div>
                   </li>
                 ))}
@@ -231,11 +225,9 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           )}
 
           {/* Nom + couleur */}
-          <Section title="Le salon">
+          <Section title={t('Le salon')}>
             <form onSubmit={saveName}>
-              <label className="block text-xs font-medium text-muted">
-                Nom
-                <div className="mt-1.5 flex gap-2">
+              <label className="block text-xs font-medium text-muted">{t('Nom')}<div className="mt-1.5 flex gap-2">
                   <input
                     className={field}
                     value={name}
@@ -244,14 +236,14 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                     onChange={(e) => setName(e.target.value)}
                   />
                   <button disabled={!nameDirty || disabled} className={`${primaryBtn} shrink-0`}>
-                    {busy === 'name' ? '…' : 'Renommer'}
+                    {busy === 'name' ? '…' : t('Renommer')}
                   </button>
                 </div>
               </label>
             </form>
 
             <fieldset className="mt-5">
-              <legend className="text-xs font-medium text-muted">Couleur</legend>
+              <legend className="text-xs font-medium text-muted">{t('Couleur')}</legend>
               <div className="mt-2 flex flex-wrap gap-2.5">
                 {ROOM_COLORS.map((c) => {
                   const active = roomColor(room) === c && !!room.color
@@ -259,9 +251,9 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                     <button
                       key={c}
                       type="button"
-                      onClick={() => run('color', () => actions.update(room.id, { color: c }), 'Couleur enregistrée')}
+                      onClick={() => run('color', () => actions.update(room.id, { color: c }), t('Couleur enregistrée'))}
                       disabled={disabled}
-                      aria-label={`Couleur ${c}`}
+                      aria-label={t('Couleur {c}', { c })}
                       aria-pressed={active}
                       className={`keep-day flex h-9 w-9 items-center justify-center rounded-full text-paper transition hover:scale-110 disabled:opacity-60 ${
                         active ? 'ring-2 ring-paper ring-offset-2 ring-offset-surface' : ''
@@ -273,44 +265,35 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                   )
                 })}
               </div>
-              <p className="mt-2 text-xs text-muted">
-                Elle colore la pochette du salon quand il n’a pas d’image, et l’étiquette du disque en haut de la page.
-              </p>
+              <p className="mt-2 text-xs text-muted">{t('Elle colore la pochette du salon quand il n’a pas d’image, et l’étiquette du disque en haut de la page.')}</p>
             </fieldset>
           </Section>
 
           {/* Pochette */}
           <Section
-            title="Pochette"
+            title={t('Pochette')}
             aside={
               room.cover_url && (
                 <button
-                  onClick={() => run('cover', () => actions.update(room.id, { cover_url: null }), 'Pochette retirée')}
+                  onClick={() => run('cover', () => actions.update(room.id, { cover_url: null }), t('Pochette retirée'))}
                   disabled={disabled}
                   className="text-xs font-medium text-muted underline-offset-4 hover:text-paper hover:underline"
-                >
-                  Retirer l’image
-                </button>
+                >{t('Retirer l’image')}</button>
               )
             }
           >
             {covers.length === 0 ? (
-              <p className="text-sm text-muted">
-                Touche la pochette en haut pour mettre une photo, ou ajoutez des disques au salon :
-                leurs pochettes pourront aussi servir d’image.
-              </p>
+              <p className="text-sm text-muted">{t('Touche la pochette en haut pour mettre une photo, ou ajoutez des disques au salon : leurs pochettes pourront aussi servir d’image.')}</p>
             ) : (
               <>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-muted">
-                    Choisis parmi les disques du salon, ou touche la pochette en haut pour une photo
-                  </p>
+                  <p className="text-xs font-medium text-muted">{t('Choisis parmi les disques du salon, ou touche la pochette en haut pour une photo')}</p>
                   {covers.length > 12 && (
                     <input
                       value={filter}
                       onChange={(e) => setFilter(e.target.value)}
-                      placeholder="Filtrer…"
-                      aria-label="Filtrer les pochettes"
+                      placeholder={t('Filtrer…')}
+                      aria-label={t('Filtrer les pochettes')}
                       className="w-36 rounded-full border border-line bg-ink px-3 py-1 text-sm outline-none focus:border-accent"
                     />
                   )}
@@ -322,7 +305,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                       <li key={c.key}>
                         <button
                           onClick={() =>
-                            run(c.key, () => actions.update(room.id, { cover_url: c.cover_url }), `Pochette : ${c.title}`)
+                            run(c.key, () => actions.update(room.id, { cover_url: c.cover_url }), t('Pochette : {title}', { title: c.title }))
                           }
                           disabled={disabled}
                           aria-pressed={active}
@@ -343,7 +326,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                     )
                   })}
                   {coverChoices.length === 0 && (
-                    <li className="col-span-full py-4 text-center text-sm text-muted">Aucune pochette ne correspond.</li>
+                    <li className="col-span-full py-4 text-center text-sm text-muted">{t('Aucune pochette ne correspond.')}</li>
                   )}
                 </ul>
               </>
@@ -351,39 +334,33 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           </Section>
 
           {/* Code d'invitation */}
-          <Section title="Invitation">
+          <Section title={t('Invitation')}>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-dashed border-accent/60 px-3.5 py-1.5 font-mono text-sm font-medium tracking-wider text-accent">
                 {room.code}
               </span>
               <button onClick={onCopyInvite} className={`${ghostBtn} flex items-center gap-1.5`}>
-                <CopyIcon width={14} height={14} /> QR code et lien
-              </button>
+                <CopyIcon width={14} height={14} />{' '}{t('QR code et lien')}</button>
               {confirm?.kind !== 'code' && (
-                <button onClick={() => setConfirm({ kind: 'code' })} disabled={disabled} className={ghostBtn}>
-                  Changer le code
-                </button>
+                <button onClick={() => setConfirm({ kind: 'code' })} disabled={disabled} className={ghostBtn}>{t('Changer le code')}</button>
               )}
             </div>
-            <p className="mt-3 text-xs text-muted">Avec ce code, on t’envoie une demande : personne n’entre sans ton accord.</p>
+            <p className="mt-3 text-xs text-muted">{t('Avec ce code, on t’envoie une demande : personne n’entre sans ton accord.')}</p>
             {confirm?.kind === 'code' && (
               <div className="animate-pop mt-4 rounded-2xl bg-raised p-4">
-                <p className="text-sm">
-                  L’ancien code et les anciens liens d’invitation ne marcheront plus.
-                  Les membres actuels restent dans le salon.
-                </p>
+                <p className="text-sm">{t('L’ancien code et les anciens liens d’invitation ne marcheront plus. Les membres actuels restent dans le salon.')}</p>
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => setConfirm(null)} className={ghostBtn}>Annuler</button>
+                  <button onClick={() => setConfirm(null)} className={ghostBtn}>{t('Annuler')}</button>
                   <button
                     onClick={async () => {
-                      if (await run('code', () => actions.regenerateCode(room.id), (r) => `Nouveau code : ${r.code}`)) {
+                      if (await run('code', () => actions.regenerateCode(room.id), (r) => t('Nouveau code : {code}', { code: r.code }))) {
                         setConfirm(null)
                       }
                     }}
                     disabled={disabled}
                     className={primaryBtn}
                   >
-                    {busy === 'code' ? '…' : 'Générer un nouveau code'}
+                    {busy === 'code' ? '…' : t('Générer un nouveau code')}
                   </button>
                 </div>
               </div>
@@ -391,7 +368,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           </Section>
 
           {/* Membres */}
-          <Section title="Membres" aside={<span className="font-mono text-xs text-muted">{room.members.length}</span>}>
+          <Section title={t('Membres')} aside={<span className="font-mono text-xs text-muted">{room.members.length}</span>}>
             <ul className="-my-1 divide-y divide-line">
               {room.members.map((m) => {
                 const isOwner = m.id === room.owner_id
@@ -403,12 +380,11 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">
                           {m.name}
-                          {m.id === meId && <span className="text-muted"> (toi)</span>}
+                          {m.id === meId && <span className="text-muted">{' '}{t('(toi)')}</span>}
                         </p>
                         {isOwner && (
                           <span className="keep-day mt-0.5 inline-flex items-center gap-1 rounded-full bg-sun px-2 py-0.5 text-[11px] font-bold text-paper">
-                            <CrownIcon width={10} height={10} /> Responsable
-                          </span>
+                            <CrownIcon width={10} height={10} />{' '}{t('Responsable')}</span>
                         )}
                       </div>
                       {m.id !== meId && !open && (
@@ -417,16 +393,12 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                             onClick={() => setConfirm({ kind: 'transfer', member: m })}
                             disabled={disabled}
                             className="rounded-full px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-raised hover:text-paper disabled:opacity-50"
-                          >
-                            Passer la main
-                          </button>
+                          >{t('Passer la main')}</button>
                           <button
                             onClick={() => setConfirm({ kind: 'remove', member: m })}
                             disabled={disabled}
                             className="rounded-full px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50"
-                          >
-                            Retirer
-                          </button>
+                          >{t('Retirer')}</button>
                         </div>
                       )}
                     </div>
@@ -434,17 +406,17 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                       <div className="animate-pop mt-3 rounded-2xl bg-raised p-4">
                         <p className="text-sm">
                           {confirm.kind === 'remove'
-                            ? `${m.name} ne verra plus les disques du salon. Sa liste perso ne change pas. Pour revenir, il lui faudra redemander avec le code.`
-                            : `${m.name} devient responsable du salon. Tu restes membre, mais tu ne pourras plus le gérer.`}
+                            ? t('{name} ne verra plus les disques du salon. Sa liste perso ne change pas. Pour revenir, il lui faudra redemander avec le code.', { name: m.name })
+                            : t('{name} devient responsable du salon. Tu restes membre, mais tu ne pourras plus le gérer.', { name: m.name })}
                         </p>
                         <div className="mt-3 flex gap-2">
-                          <button onClick={() => setConfirm(null)} className={ghostBtn}>Annuler</button>
+                          <button onClick={() => setConfirm(null)} className={ghostBtn}>{t('Annuler')}</button>
                           <button
                             onClick={async () => {
                               const ok =
                                 confirm.kind === 'remove'
-                                  ? await run('member', () => actions.removeMember(room.id, m.id), `${m.name} a été retiré du salon`)
-                                  : await run('member', () => actions.transfer(room.id, m.id), `${m.name} est maintenant responsable`)
+                                  ? await run('member', () => actions.removeMember(room.id, m.id), t('{name} a été retiré du salon', { name: m.name }))
+                                  : await run('member', () => actions.transfer(room.id, m.id), t('{name} est maintenant responsable', { name: m.name }))
                               if (ok) {
                                 setConfirm(null)
                                 if (confirm.kind === 'transfer') onClose()
@@ -457,7 +429,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                                 : primaryBtn
                             }
                           >
-                            {busy === 'member' ? '…' : confirm.kind === 'remove' ? `Retirer ${m.name}` : `Confier à ${m.name}`}
+                            {busy === 'member' ? '…' : confirm.kind === 'remove' ? `Retirer ${m.name}` : t('Confier à {name}', { name: m.name })}
                           </button>
                         </div>
                       </div>
@@ -467,7 +439,7 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
               })}
             </ul>
             {others.length === 0 && (
-              <p className="mt-3 text-sm text-muted">Tu es seul·e pour l’instant : partage le code pour inviter tes proches.</p>
+              <p className="mt-3 text-sm text-muted">{t('Tu es seul·e pour l’instant : partage le code pour inviter tes proches.')}</p>
             )}
           </Section>
 
@@ -481,32 +453,26 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
                 }}
                 disabled={offline}
                 className="text-left text-sm text-muted underline-offset-4 hover:text-red-600 hover:underline"
-              >
-                Supprimer le salon
-              </button>
+              >{t('Supprimer le salon')}</button>
             ) : (
               <form
                 onSubmit={async (e) => {
                   e.preventDefault()
-                  if (await run('delete', () => actions.remove(room.id), `« ${room.name} » a été supprimé`)) onClose()
+                  if (await run('delete', () => actions.remove(room.id), t('« {name} » a été supprimé', { name: room.name }))) onClose()
                 }}
                 className="animate-pop rounded-2xl border border-red-500/40 bg-red-500/5 p-5"
               >
-                <p className="font-display text-xl font-black uppercase leading-tight">Supprimer « {room.name} » ?</p>
-                <p className="mt-2 text-sm text-muted">
-                  Le salon disparaît pour tout le monde. Les souhaits et collections de chacun ne bougent pas.
-                </p>
-                <label className="mt-4 block text-xs font-medium text-muted">
-                  Tape <span className="font-mono font-bold text-paper">SUPPRIMER</span> pour confirmer
-                  <input className={`${field} mt-1.5`} value={deleteWord} onChange={(e) => setDeleteWord(e.target.value)} autoComplete="off" />
+                <p className="font-display text-xl font-black uppercase leading-tight">{t('Supprimer « {name} » ?', { name: room.name })}</p>
+                <p className="mt-2 text-sm text-muted">{t('Le salon disparaît pour tout le monde. Les souhaits et collections de chacun ne bougent pas.')}</p>
+                <label className="mt-4 block text-xs font-medium text-muted">{t('Tape')} <span className="font-mono font-bold text-paper">{t('SUPPRIMER')}</span> {t('pour confirmer')}<input className={`${field} mt-1.5`} value={deleteWord} onChange={(e) => setDeleteWord(e.target.value)} autoComplete="off" />
                 </label>
                 <div className="mt-4 flex gap-2">
-                  <button type="button" onClick={() => setConfirm(null)} className={ghostBtn}>Annuler</button>
+                  <button type="button" onClick={() => setConfirm(null)} className={ghostBtn}>{t('Annuler')}</button>
                   <button
-                    disabled={disabled || deleteWord.trim().toUpperCase() !== 'SUPPRIMER'}
+                    disabled={disabled || deleteWord.trim().toUpperCase() !== t('SUPPRIMER').toUpperCase()}
                     className="rounded-full bg-red-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-50"
                   >
-                    {busy === 'delete' ? '…' : 'Supprimer le salon'}
+                    {busy === 'delete' ? '…' : t('Supprimer le salon')}
                   </button>
                 </div>
               </form>
@@ -527,11 +493,11 @@ export default function RoomSettings({ room, meId, covers = [], requests = [], a
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Recadrer la photo du salon"
+            aria-label={t('Recadrer la photo du salon')}
             className="w-full max-w-md rounded-3xl bg-surface p-5 shadow-2xl shadow-black/60"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-3 font-display text-2xl font-black uppercase">Photo du salon</h3>
+            <h3 className="mb-3 font-display text-2xl font-black uppercase">{t('Photo du salon')}</h3>
             <PhotoCropper
               file={photoFile}
               busy={busy === 'photo'}

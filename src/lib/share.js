@@ -1,4 +1,5 @@
 import { formatPrice } from './format'
+import { t } from './i18n'
 
 const stars = (n) => '★'.repeat(n) + '☆'.repeat(3 - n)
 
@@ -11,7 +12,7 @@ export function buildListText(vinyls, { title, url, withOwners }) {
   const lines = vinyls.map((v) => {
     let line = `• ${v.artist} – ${v.title}`
     if (v.year) line += ` (${v.year})`
-    if (v.lowest_price != null) line += ` · dès ${formatPrice(v.lowest_price)}`
+    if (v.lowest_price != null) line += t('· dès {formatPrice}', { formatPrice: formatPrice(v.lowest_price) })
     if (v.priority > 0) line += ` · ${stars(v.priority)}`
     if (withOwners && v.owners?.length) line += ` · ${v.owners.map((o) => o.name).join(', ')}`
     if (v.note) line += `\n   « ${v.note} »`
@@ -19,7 +20,7 @@ export function buildListText(vinyls, { title, url, withOwners }) {
   })
 
   const out = [`${title} (${count})`, '', ...lines]
-  if (url) out.push('', `Rejoins le salon : ${url}`)
+  if (url) out.push('', t('Rejoins le salon : {url}', { url }))
   return out.join('\n')
 }
 

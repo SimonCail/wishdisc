@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { ChevronIcon, CheckIcon } from './Icons'
+import { t } from '../lib/i18n'
 
-export default function SortSelect({ value, options, onChange, label = 'Trier' }) {
+export default function SortSelect({ value, options, onChange, label = t('Trier') }) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const rootRef = useRef(null)

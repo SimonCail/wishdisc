@@ -1,5 +1,6 @@
 import { itemKey } from './discogs'
 import { matchSpecial } from './edition'
+import { t, compareText } from './i18n'
 
 const normalize = (s = '') =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -58,11 +59,11 @@ export function filterByPerson(list, person) {
 }
 
 export const SORT_OPTIONS = [
-  { value: 'recent', label: 'Plus récents' },
-  { value: 'priority', label: 'Priorité' },
-  { value: 'artist', label: 'Artiste (A-Z)' },
-  { value: 'title', label: 'Titre (A-Z)' },
-  { value: 'year', label: 'Année (récent)' },
+  { value: 'recent', label: t('Plus récents') },
+  { value: 'priority', label: t('Priorité') },
+  { value: 'artist', label: t('Artiste (A-Z)') },
+  { value: 'title', label: t('Titre (A-Z)') },
+  { value: 'year', label: t('Année (récent)') },
 ]
 
 const byRecent = (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -70,8 +71,8 @@ const byRecent = (a, b) => new Date(b.created_at) - new Date(a.created_at)
 const sorters = {
   recent: byRecent,
   priority: (a, b) => b.priority - a.priority || byRecent(a, b),
-  artist: (a, b) => a.artist.localeCompare(b.artist, 'fr'),
-  title: (a, b) => a.title.localeCompare(b.title, 'fr'),
+  artist: (a, b) => compareText(a.artist, b.artist),
+  title: (a, b) => compareText(a.title, b.title),
   year: (a, b) => (Number(b.year) || 0) - (Number(a.year) || 0),
 }
 
@@ -95,5 +96,5 @@ export function getGenres(vinyls) {
   }
   return [...genres.entries()]
     .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
+    .sort((a, b) => b.count - a.count || compareText(a.name, b.name))
 }

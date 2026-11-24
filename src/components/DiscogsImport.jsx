@@ -3,6 +3,7 @@ import Cover from './Cover'
 import { CloseIcon, CheckIcon } from './Icons'
 import { cleanDiscogsUsername, fetchDiscogsList, itemKey } from '../lib/discogs'
 import { readJSON, writeJSON } from '../lib/cache'
+import { t, tn } from '../lib/i18n'
 
 const USER_KEY = 'vinyl-wishlist-discogs-user'
 
@@ -110,7 +111,7 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
   async function read(e) {
     e.preventDefault()
     const user = cleanDiscogsUsername(username)
-    if (!user) return setError('Indique ton nom d’utilisateur Discogs.')
+    if (!user) return setError(t('Indique ton nom d’utilisateur Discogs.'))
     setError(null)
     setStep('reading')
     writeJSON(USER_KEY, user)
@@ -118,10 +119,10 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
     try {
       const kinds = [wantOwned && 'owned', wantWish && 'wish'].filter(Boolean)
       for (const kind of kinds) {
-        const label = kind === 'owned' ? 'ta collection' : 'ta wantlist'
-        setProgress({ label: `Lecture de ${label}…`, value: 0 })
+        const label = kind === 'owned' ? t('ta collection') : t('ta wantlist')
+        setProgress({ label: t('Lecture de {label}…', { label }), value: 0 })
         found[kind] = await fetchDiscogsList(user, kind, ({ done, total }) =>
-          setProgress({ label: `Lecture de ${label} · ${done} / ${total}`, value: total ? done / total : 1 })
+          setProgress({ label: t('Lecture de {label} · {done} / {total}', { label, done, total }), value: total ? done / total : 1 })
         )
       }
       setLists(found)
@@ -136,16 +137,16 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
     setStep('saving')
     setError(null)
     const total = plan.inserts.length + plan.upgrades.length
-    setProgress({ label: `Import · 0 / ${total}`, value: 0 })
+    setProgress({ label: t('Import · 0 / {total}', { total }), value: 0 })
     try {
       const res = await onImport(
         { inserts: plan.inserts, upgrades: plan.upgrades },
-        (done) => setProgress({ label: `Import · ${done} / ${total}`, value: total ? done / total : 1 })
+        (done) => setProgress({ label: t('Import · {done} / {total}', { done, total }), value: total ? done / total : 1 })
       )
       setResult(res)
       setStep('done')
     } catch (err) {
-      setError(err.message || 'L’import a échoué. Réessaie.')
+      setError(err.message || t('L’import a échoué. Réessaie.'))
       setStep('preview')
     }
   }
@@ -158,18 +159,18 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Importer depuis Discogs"
+        aria-label={t('Importer depuis Discogs')}
         className="animate-pop flex max-h-[94vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-accent text-ink shadow-2xl shadow-black/60 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-5 sm:px-7 sm:pt-6">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink/70">Depuis Discogs</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink/70">{t('Depuis Discogs')}</p>
             <h3 className="mt-1 font-display text-4xl font-black uppercase leading-[0.85] sm:text-5xl">
-              {step === 'done' ? 'C’est rangé.' : 'Ramène tes disques.'}
+              {step === 'done' ? t('C’est rangé.') : t('Ramène tes disques.')}
             </h3>
           </div>
-          <button onClick={onClose} disabled={busy} aria-label="Fermer" className="-mr-1 rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink disabled:opacity-40">
+          <button onClick={onClose} disabled={busy} aria-label={t('Fermer')} className="-mr-1 rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink disabled:opacity-40">
             <CloseIcon width={22} height={22} />
           </button>
         </div>
@@ -178,16 +179,12 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
           {/* 1. Nom d'utilisateur */}
           {(step === 'form' || step === 'reading') && (
             <form onSubmit={read} className="space-y-4">
-              <p className="text-sm text-ink/80">
-                Ta collection et ta wantlist Discogs arrivent d’un coup dans ta liste. Rien n’est modifié sur Discogs.
-              </p>
-              <label className="block text-xs font-medium text-ink/75">
-                Ton nom d’utilisateur Discogs (ou le lien de ton profil)
-                <input
+              <p className="text-sm text-ink/80">{t('Ta collection et ta wantlist Discogs arrivent d’un coup dans ta liste. Rien n’est modifié sur Discogs.')}</p>
+              <label className="block text-xs font-medium text-ink/75">{t('Ton nom d’utilisateur Discogs (ou le lien de ton profil)')}<input
                   className={`${field} mt-1.5`}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="ex. pseudo_vinyles"
+                  placeholder={t('ex. pseudo_vinyles')}
                   autoComplete="off"
                   autoCapitalize="off"
                   spellCheck="false"
@@ -195,8 +192,8 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
                 />
               </label>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Toggle checked={wantOwned} onChange={setWantOwned} disabled={busy} title="Collection" hint="→ dans ta collection" />
-                <Toggle checked={wantWish} onChange={setWantWish} disabled={busy} title="Wantlist" hint="→ dans tes souhaits" />
+                <Toggle checked={wantOwned} onChange={setWantOwned} disabled={busy} title={t('Collection')} hint={t('→ dans ta collection')} />
+                <Toggle checked={wantWish} onChange={setWantWish} disabled={busy} title={t('Wantlist')} hint={t('→ dans tes souhaits')} />
               </div>
               {error && <p className="rounded-xl bg-ink px-3 py-2 text-sm text-red-600">{error}</p>}
               {step === 'reading' ? (
@@ -206,12 +203,10 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
                   disabled={!username.trim() || (!wantOwned && !wantWish) || offline}
                   className="w-full rounded-full bg-ink py-3 font-bold text-accent transition hover:bg-surface disabled:opacity-50"
                 >
-                  {offline ? 'Indisponible hors-ligne' : 'Voir ce qui sera importé'}
+                  {offline ? t('Indisponible hors-ligne') : t('Voir ce qui sera importé')}
                 </button>
               )}
-              <p className="text-xs text-ink/60">
-                Seules les listes publiques sont lisibles. Les CD et cassettes sont ignorés.
-              </p>
+              <p className="text-xs text-ink/60">{t('Seules les listes publiques sont lisibles. Les CD et cassettes sont ignorés.')}</p>
             </form>
           )}
 
@@ -219,15 +214,15 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
           {(step === 'preview' || step === 'saving') && plan && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
-                {lists.owned && <Stat n={plan.newOwned} label="nouveaux dans ta collection" />}
-                {lists.wish && <Stat n={plan.newWish} label="nouveaux dans tes souhaits" />}
-                {plan.upgrades.length > 0 && <Stat n={plan.upgrades.length} label="souhaits que tu as déjà : passent en collection" />}
-                <Stat n={plan.already} label="déjà dans ta liste" muted />
-                {plan.skipped > 0 && <Stat n={plan.skipped} label="CD, cassettes… ignorés" muted />}
+                {lists.owned && <Stat n={plan.newOwned} label={t('nouveaux dans ta collection')} />}
+                {lists.wish && <Stat n={plan.newWish} label={t('nouveaux dans tes souhaits')} />}
+                {plan.upgrades.length > 0 && <Stat n={plan.upgrades.length} label={t('souhaits que tu as déjà : passent en collection')} />}
+                <Stat n={plan.already} label={t('déjà dans ta liste')} muted />
+                {plan.skipped > 0 && <Stat n={plan.skipped} label={t('CD, cassettes… ignorés')} muted />}
               </div>
 
               {preview.length > 0 && (
-                <ul className="grid grid-cols-6 gap-1.5" aria-label="Aperçu">
+                <ul className="grid grid-cols-6 gap-1.5" aria-label={t('Aperçu')}>
                   {preview.map((it) => (
                     <li key={itemKey(it)} title={`${it.artist} – ${it.title}`}>
                       <Cover url={it.cover_url} className="aspect-square w-full overflow-hidden rounded-md ring-1 ring-ink/20" />
@@ -238,9 +233,7 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
 
               {lists.owned && (plan.upgrades.length > 0 || !upgradeWishes) && (
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={upgradeWishes} onChange={(e) => setUpgradeWishes(e.target.checked)} disabled={busy} className="h-4 w-4 accent-[var(--color-sun)]" />
-                  Passer en collection les souhaits que j’ai déjà sur Discogs
-                </label>
+                  <input type="checkbox" checked={upgradeWishes} onChange={(e) => setUpgradeWishes(e.target.checked)} disabled={busy} className="h-4 w-4 accent-[var(--color-sun)]" />{t('Passer en collection les souhaits que j’ai déjà sur Discogs')}</label>
               )}
 
               {error && <p className="rounded-xl bg-ink px-3 py-2 text-sm text-red-600">{error}</p>}
@@ -249,18 +242,14 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
                 <Progress value={progress.value} label={progress.label} />
               ) : toDo === 0 ? (
                 <div className="space-y-2">
-                  <p className="rounded-2xl bg-ink/15 p-4 text-sm">Tout est déjà dans ta liste, rien à importer.</p>
-                  <button onClick={() => setStep('form')} className="w-full rounded-full border border-ink/40 py-2.5 text-sm font-medium transition hover:bg-ink/10">
-                    Changer de compte
-                  </button>
+                  <p className="rounded-2xl bg-ink/15 p-4 text-sm">{t('Tout est déjà dans ta liste, rien à importer.')}</p>
+                  <button onClick={() => setStep('form')} className="w-full rounded-full border border-ink/40 py-2.5 text-sm font-medium transition hover:bg-ink/10">{t('Changer de compte')}</button>
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={() => setStep('form')} className="rounded-full border border-ink/40 px-4 py-3 text-sm font-medium transition hover:bg-ink/10">
-                    Retour
-                  </button>
+                  <button onClick={() => setStep('form')} className="rounded-full border border-ink/40 px-4 py-3 text-sm font-medium transition hover:bg-ink/10">{t('Retour')}</button>
                   <button onClick={save} disabled={offline} className="flex-1 rounded-full bg-ink py-3 font-bold text-accent transition hover:bg-surface disabled:opacity-50">
-                    Importer {toDo} disque{toDo > 1 ? 's' : ''}
+                    {tn(toDo, 'Importer {n} disque', 'Importer {n} disques')}
                   </button>
                 </div>
               )}
@@ -273,18 +262,16 @@ export default function DiscogsImport({ statusOf, onImport, onClose, offline }) 
               <div className="flex items-center gap-4 rounded-2xl bg-ink/15 p-4">
                 <span className="vinyl-disc animate-slow-spin block h-14 w-14 shrink-0" style={{ '--disc-label': '#f1c04e' }} />
                 <p className="text-sm leading-relaxed">
-                  <span className="font-display text-2xl font-black">{result.added}</span> disque{result.added > 1 ? 's' : ''} ajouté{result.added > 1 ? 's' : ''}
+                  {tn(result.added, '{n} disque ajouté', '{n} disques ajoutés')}
                   {result.upgraded > 0 && (
                     <>
-                      , <span className="font-display text-2xl font-black">{result.upgraded}</span> souhait{result.upgraded > 1 ? 's' : ''} passé{result.upgraded > 1 ? 's' : ''} en collection
+                      , {tn(result.upgraded, '{n} souhait passé en collection', '{n} souhaits passés en collection')}
                     </>
                   )}
                   .
                 </p>
               </div>
-              <button onClick={onClose} className="w-full rounded-full bg-ink py-3 font-bold text-accent transition hover:bg-surface">
-                Voir ma liste
-              </button>
+              <button onClick={onClose} className="w-full rounded-full bg-ink py-3 font-bold text-accent transition hover:bg-surface">{t('Voir ma liste')}</button>
             </div>
           )}
         </div>

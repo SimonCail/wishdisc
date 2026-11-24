@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { btn } from '../lib/ui'
 import { BrandMark } from './Layout'
 import { StarIcon } from './Icons'
+import { t } from '../lib/i18n'
 
 // --- Visite guidée du premier lancement ---
 // Le reste de l'écran est grisé, la lumière passe d'un élément à l'autre.
@@ -16,25 +17,25 @@ const STEPS = [
   { kind: 'modal', id: 'welcome' },
   {
     kind: 'spot', target: 'add', part: 1, section: 'home', clickTarget: true,
-    title: 'Ajoute un disque',
-    text: 'Le bouton + sert à chercher un album, scanner une pochette ou importer Discogs. Touche-le !',
+    title: t('Ajoute un disque'),
+    text: t('Le bouton + sert à chercher un album, scanner une pochette ou importer Discogs. Touche-le !'),
   },
   {
     kind: 'spot', target: 'demo-card', part: 1, section: 'home', scroll: true,
-    title: 'Le voilà dans tes souhaits',
-    text: 'Mets-lui des étoiles selon ton envie. Quand tu l’as enfin, « Je l’ai » le range dans ta collection.',
+    title: t('Le voilà dans tes souhaits'),
+    text: t('Mets-lui des étoiles selon ton envie. Quand tu l’as enfin, « Je l’ai » le range dans ta collection.'),
   },
   {
     kind: 'spot', target: 'join', part: 2, section: 'rooms', scroll: true,
-    title: 'Les salons',
-    text: 'Un salon met en commun les listes d’une famille ou d’un groupe d’amis. On y entre avec le code d’un proche, qui accepte ta demande.',
-    next: 'Rejoindre la démo',
+    title: t('Les salons'),
+    text: t('Un salon met en commun les listes d’une famille ou d’un groupe d’amis. On y entre avec le code d’un proche, qui accepte ta demande.'),
+    next: t('Rejoindre la démo'),
   },
   { kind: 'screen', id: 'room', part: 2 },
   {
     kind: 'spot', target: 'nav-messages', part: 3, clickTarget: true,
-    title: 'Amis et messages',
-    text: 'Ajoute tes proches en ami pour voir leurs listes, discuter et vous envoyer des disques. Touche Messages !',
+    title: t('Amis et messages'),
+    text: t('Ajoute tes proches en ami pour voir leurs listes, discuter et vous envoyer des disques. Touche Messages !'),
   },
   { kind: 'screen', id: 'chat', part: 3 },
   { kind: 'modal', id: 'end' },
@@ -100,17 +101,15 @@ function Bubble({ step, onNext, onSkip, style, children }) {
       className="animate-pop pointer-events-auto absolute rounded-2xl bg-surface p-4 shadow-2xl shadow-black/40 sm:max-w-sm"
       style={style}
     >
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">
-        Étape {step.part} sur {PARTS}
-      </p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">{t('Étape {part} sur {PARTS}', { part: step.part, PARTS })}</p>
       <p id="tour-title" className="mt-1 text-lg font-black">{step.title}</p>
       <p className="mt-1 text-sm leading-relaxed text-muted">{step.text}</p>
       {children}
       <div className="mt-3 flex items-center justify-between gap-3">
-        <button onClick={onSkip} className={`${btn.quiet} shrink-0 whitespace-nowrap`}>Passer la visite</button>
+        <button onClick={onSkip} className={`${btn.quiet} shrink-0 whitespace-nowrap`}>{t('Passer la visite')}</button>
         {onNext ? (
           <button onClick={onNext} className={btn.primary} autoFocus>
-            {step.next || 'Suivant'}
+            {step.next || t('Suivant')}
           </button>
         ) : (
           <Dots part={step.part} />
@@ -124,13 +123,13 @@ function Bubble({ step, onNext, onSkip, style, children }) {
 function FakeRoom({ me, onNext, onSkip }) {
   const wishes = [
     { title: 'Blonde', artist: 'Frank Ocean', color: '#c9a227', by: WANDA, priority: 3 },
-    { title: 'Disque de démo', artist: 'Wishdisc', color: '#6aa6d6', by: me, priority: 2 },
+    { title: t('Disque de démo'), artist: 'Wishdisc', color: '#6aa6d6', by: me, priority: 2 },
   ]
   return (
     <div className="pointer-events-auto absolute inset-0 overflow-y-auto bg-ink">
       <div className="keep-day bg-accent px-5 pb-6 pt-8 text-ink">
-        <p className="text-xs uppercase tracking-[0.14em] opacity-80">Salon · code {DEMO_CODE}</p>
-        <p className="mt-1.5 font-display text-4xl font-black uppercase leading-none">Famille démo</p>
+        <p className="text-xs uppercase tracking-[0.14em] opacity-80">{t('Salon · code')}{' '}{DEMO_CODE}</p>
+        <p className="mt-1.5 font-display text-4xl font-black uppercase leading-none">{t('Famille démo')}</p>
         <div className="mt-4 flex">
           {[me, WANDA].map((p, i) => (
             <span
@@ -151,9 +150,7 @@ function FakeRoom({ me, onNext, onSkip }) {
               <span className="block font-bold">{w.title}</span>
               <span className="block text-sm text-muted">{w.artist}</span>
               <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: w.by.color }} />
-                Souhait de {w.by === me ? 'toi' : w.by.name}
-                <span className="flex text-accent">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: w.by.color }} />{w.by === me ? t('Ton souhait') : t('Souhait de {name}', { name: w.by.name })}<span className="flex text-accent">
                   {Array.from({ length: w.priority }).map((_, i) => <StarIcon key={i} filled width={12} height={12} />)}
                 </span>
               </span>
@@ -162,7 +159,7 @@ function FakeRoom({ me, onNext, onSkip }) {
         ))}
       </ul>
       <Bubble
-        step={{ part: 2, title: 'Tu es dans le salon', text: 'Ici, chacun voit les souhaits et les collections des autres. Pratique pour les anniversaires : on sait quoi offrir, et à qui.' }}
+        step={{ part: 2, title: t('Tu es dans le salon'), text: t('Ici, chacun voit les souhaits et les collections des autres. Pratique pour les anniversaires : on sait quoi offrir, et à qui.') }}
         onNext={onNext}
         onSkip={onSkip}
         style={{ left: 16, right: 16, bottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
@@ -174,7 +171,7 @@ function FakeRoom({ me, onNext, onSkip }) {
 // --- Fausse conversation avec Wanda (étape 6) : on peut lui répondre, rien ne part ---
 function FakeChat({ onNext, onSkip }) {
   const [msgs, setMsgs] = useState([
-    { from: 'wanda', text: 'Coucou ! Regarde ce disque, il est dans ma liste' },
+    { from: 'wanda', text: t('Coucou ! Regarde ce disque, il est dans ma liste') },
     { from: 'wanda', disc: { title: 'Blonde', artist: 'Frank Ocean', color: '#c9a227' } },
   ])
   const [text, setText] = useState('')
@@ -185,11 +182,11 @@ function FakeChat({ onNext, onSkip }) {
 
   function send(e) {
     e.preventDefault()
-    const t = text.trim()
-    if (!t) return
-    setMsgs((m) => [...m, { from: 'me', text: t }])
+    const tx = text.trim()
+    if (!tx) return
+    setMsgs((m) => [...m, { from: 'me', text: tx }])
     setText('')
-    setTimeout(() => setMsgs((m) => [...m, { from: 'wanda', text: 'Trop bien ! On en reparle dans le salon.' }]), 900)
+    setTimeout(() => setMsgs((m) => [...m, { from: 'wanda', text: t('Trop bien ! On en reparle dans le salon.') }]), 900)
   }
 
   return (
@@ -197,14 +194,13 @@ function FakeChat({ onNext, onSkip }) {
       <div className="flex items-center gap-3 border-b border-line bg-surface px-4 pb-3 pt-6">
         <span className="flex h-10 w-10 items-center justify-center rounded-full font-black text-[#1b2420]" style={{ background: WANDA.color }}>W</span>
         <span>
-          <span className="flex items-center gap-2 font-bold">
-            Wanda <span className="keep-day rounded-full bg-sun px-2 py-0.5 text-[10px] font-black text-paper">DÉMO</span>
+          <span className="flex items-center gap-2 font-bold">Wanda{' '}<span className="keep-day rounded-full bg-sun px-2 py-0.5 text-[10px] font-black text-paper">{t('DÉMO')}</span>
           </span>
-          <span className="block text-xs text-muted">Amie de démo, rien n’est envoyé</span>
+          <span className="block text-xs text-muted">{t('Amie de démo, rien n’est envoyé')}</span>
         </span>
       </div>
       <Bubble
-        step={{ part: 3, title: 'Discute avec tes amis', text: 'Réponds à Wanda pour essayer, ou envoie-lui un disque depuis sa fiche. Ici, rien ne part pour de vrai.' }}
+        step={{ part: 3, title: t('Discute avec tes amis'), text: t('Réponds à Wanda pour essayer, ou envoie-lui un disque depuis sa fiche. Ici, rien ne part pour de vrai.') }}
         onNext={onNext}
         onSkip={onSkip}
         style={{ position: 'relative', margin: '12px 16px 0' }}
@@ -233,11 +229,11 @@ function FakeChat({ onNext, onSkip }) {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Écris à Wanda…"
-          aria-label="Message à Wanda (démo)"
+          placeholder={t('Écris à Wanda…')}
+          aria-label={t('Message à Wanda (démo)')}
           className="h-11 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-base outline-none focus:border-accent"
         />
-        <button className={`${btn.primary} h-11`}>Envoyer</button>
+        <button className={`${btn.primary} h-11`}>{t('Envoyer')}</button>
       </form>
     </div>
   )
@@ -290,35 +286,21 @@ export default function Tour({ me, onSection, onDemoVinyl, onFinish }) {
           {start ? (
             <>
               <BrandMark size={64} className="mx-auto" />
-              <p id="tour-title" className="mt-4 font-display text-3xl font-black uppercase leading-[0.95]">
-                Bienvenue,
-                <br />
-                {me.name} !
+              <p id="tour-title" className="mt-4 font-display text-3xl font-black uppercase leading-[0.95]">{t('Bienvenue,')}<br />
+                {t('{name} !', { name: me.name })}
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Une petite visite d’une minute pour tout voir. Ce qu’on ajoute pendant la visite est pour de faux.
-              </p>
-              <button onClick={next} className={`${btn.primary} mt-5 w-full py-3 text-base`} autoFocus>C’est parti</button>
-              <button onClick={skip} className={`${btn.quiet} mt-2`}>Passer la visite</button>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{t('Une petite visite d’une minute pour tout voir. Ce qu’on ajoute pendant la visite est pour de faux.')}</p>
+              <button onClick={next} className={`${btn.primary} mt-5 w-full py-3 text-base`} autoFocus>{t('C’est parti')}</button>
+              <button onClick={skip} className={`${btn.quiet} mt-2`}>{t('Passer la visite')}</button>
             </>
           ) : (
             <>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Étape {PARTS} sur {PARTS}</p>
-              <p id="tour-title" className="mt-2 font-display text-3xl font-black uppercase leading-[0.95]">
-                À toi de
-                <br />
-                jouer !
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Le disque, le salon et Wanda étaient là pour la démo : ils disparaissent. Ta liste est toute neuve.
-              </p>
-              <button onClick={() => finish('add')} className={`${btn.primary} mt-5 w-full py-3 text-base`} autoFocus>
-                Ajouter mon premier disque
-              </button>
-              <button onClick={() => finish('rooms')} className={`${btn.secondary} mt-2 w-full py-3 text-base`}>
-                J’ai un code de salon
-              </button>
-              <p className="mt-3 text-xs text-muted">Tu peux revoir la visite depuis ton profil.</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted">{t('Étape {part} sur {PARTS}', { part: PARTS, PARTS })}</p>
+              <p id="tour-title" className="mt-2 font-display text-3xl font-black uppercase leading-[0.95]">{t('À toi de')}<br />{t('jouer !')}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{t('Le disque, le salon et Wanda étaient là pour la démo : ils disparaissent. Ta liste est toute neuve.')}</p>
+              <button onClick={() => finish('add')} className={`${btn.primary} mt-5 w-full py-3 text-base`} autoFocus>{t('Ajouter mon premier disque')}</button>
+              <button onClick={() => finish('rooms')} className={`${btn.secondary} mt-2 w-full py-3 text-base`}>{t('J’ai un code de salon')}</button>
+              <p className="mt-3 text-xs text-muted">{t('Tu peux revoir la visite depuis ton profil.')}</p>
             </>
           )}
         </div>
@@ -362,7 +344,7 @@ export default function Tour({ me, onSection, onDemoVinyl, onFinish }) {
     step.target === 'join' ? (
       <p className="mt-3 flex items-center justify-between rounded-xl border border-line bg-raised/60 px-3 py-2">
         <span className="font-mono text-lg font-bold tracking-[0.2em]">{DEMO_CODE}</span>
-        <span className="text-xs text-muted">code de démo</span>
+        <span className="text-xs text-muted">{t('code de démo')}</span>
       </p>
     ) : null
 

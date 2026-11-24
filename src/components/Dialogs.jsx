@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { btn } from '../lib/ui'
+import { t } from '../lib/i18n'
 
 export function Overlay({ children, onClose, wide = false }) {
   return (
@@ -26,9 +27,7 @@ export function ConfirmDialog({ title, message, confirmLabel, onConfirm, onClose
       <h3 className="font-display text-xl font-bold">{title}</h3>
       <p className="mt-2 text-sm text-muted">{message}</p>
       <div className="mt-6 flex gap-2">
-        <button onClick={onClose} className={secondaryBtn}>
-          Annuler
-        </button>
+        <button onClick={onClose} className={secondaryBtn}>{t('Annuler')}</button>
         <button
           onClick={onConfirm}
           className={`${btn.danger} flex-1`}
@@ -51,7 +50,7 @@ export function NoteDialog({ vinyl, onConfirm, onClose }) {
   return (
     <Overlay onClose={onClose}>
       <form onSubmit={submit}>
-        <h3 className="font-display text-xl font-bold">Une précision ?</h3>
+        <h3 className="font-display text-xl font-bold">{t('Une précision ?')}</h3>
         <p className="mt-1 truncate text-sm text-muted">
           {vinyl.title} · {vinyl.artist}
         </p>
@@ -61,19 +60,15 @@ export function NoteDialog({ vinyl, onConfirm, onClose }) {
           maxLength={200}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Ex. : pressage coloré si possible"
+          placeholder={t('Ex. : pressage coloré si possible')}
           className="mt-4 w-full resize-none rounded-2xl border border-line bg-ink px-4 py-3 outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/15"
         />
         <div className="mt-5 flex gap-2">
-          <button type="button" onClick={onClose} className={secondaryBtn}>
-            Annuler
-          </button>
+          <button type="button" onClick={onClose} className={secondaryBtn}>{t('Annuler')}</button>
           <button
             type="submit"
             className={`${btn.primary} flex-1`}
-          >
-            Enregistrer
-          </button>
+          >{t('Enregistrer')}</button>
         </div>
       </form>
     </Overlay>

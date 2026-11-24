@@ -1,5 +1,6 @@
 import { searchArtists } from './discogs'
 import { readJSON, writeJSON } from './cache'
+import { t } from './i18n'
 
 const CACHE_KEY = 'vinyl-wishlist-artist-images-v1'
 const DISCOGS_IMAGE = /^https:\/\/i\.discogs\.com\//

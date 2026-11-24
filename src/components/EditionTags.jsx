@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n'
 // Petites étiquettes de l'édition (couleur, signé, numéro…), sur la carte et la fiche
 
 export const PenIcon = (p) => (
@@ -23,17 +24,17 @@ export default function EditionTags({ tags, size = 'sm', className = '' }) {
   if (!tags?.length) return null
   const big = size === 'md'
   return (
-    <ul className={`flex flex-wrap gap-1.5 ${className}`} aria-label="Édition">
-      {tags.map((t) => (
+    <ul className={`flex flex-wrap gap-1.5 ${className}`} aria-label={t('Édition')}>
+      {tags.map((tx) => (
         <li
-          key={t.key}
+          key={tx.key}
           className={`inline-flex max-w-full items-center gap-1.5 rounded-full border ${
-            t.strong ? 'border-accent bg-accent/15 font-bold' : 'border-line bg-raised/60'
+            tx.strong ? 'border-accent bg-accent/15 font-bold' : 'border-line bg-raised/60'
           } ${big ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-[11px] font-medium'}`}
         >
-          {t.swatch && <Swatch swatch={t.swatch} size={big ? 12 : 9} />}
-          {t.icon === 'pen' && <PenIcon width={big ? 14 : 11} height={big ? 14 : 11} />}
-          <span className="truncate">{t.label}</span>
+          {tx.swatch && <Swatch swatch={tx.swatch} size={big ? 12 : 9} />}
+          {tx.icon === 'pen' && <PenIcon width={big ? 14 : 11} height={big ? 14 : 11} />}
+          <span className="truncate">{tx.label}</span>
         </li>
       ))}
     </ul>

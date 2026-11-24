@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AvatarStack } from './Avatar'
 import { CloseIcon } from './Icons'
 import { pseudoError, emailError, emailSuggestion, passwordError, PASSWORD_RULES, PSEUDO_MAX, PASSWORD_MAX } from '../lib/validation'
+import { t } from '../lib/i18n'
 
 // Texte en 16 px : tous les champs ont la même hauteur, et l'iPhone ne zoome pas en touchant un champ
 const fieldBase =
@@ -10,12 +11,12 @@ const field = `mt-1.5 ${fieldBase}`
 const fieldError = 'border-red-500 focus:border-red-500 focus:ring-red-500/15'
 
 const TITLES = {
-  login: ['Re-bonjour.', 'Connecte-toi pour retrouver tes disques et tes salons.'],
-  signup: ['Ton bac à toi.', 'Tes souhaits et ta collection te suivent dans tous les salons que tu rejoins.'],
-  forgot: ['Mot de passe oublié.', 'Indique ton email : tu recevras un code pour en choisir un nouveau.'],
-  recovery: ['Nouveau mot de passe.', 'Choisis ton nouveau mot de passe.'],
-  verify: ['Vérifie tes mails.', ''],
-  forgotCode: ['Vérifie tes mails.', ''],
+  login: ['Re-bonjour.', t('Connecte-toi pour retrouver tes disques et tes salons.')],
+  signup: [t('Ton bac à toi.'), t('Tes souhaits et ta collection te suivent dans tous les salons que tu rejoins.')],
+  forgot: [t('Mot de passe oublié.'), t('Indique ton email : tu recevras un code pour en choisir un nouveau.')],
+  recovery: [t('Nouveau mot de passe.'), t('Choisis ton nouveau mot de passe.')],
+  verify: [t('Vérifie tes mails.'), ''],
+  forgotCode: [t('Vérifie tes mails.'), ''],
 }
 
 const RESEND_DELAY = 60 // secondes avant de pouvoir redemander un code
@@ -34,15 +35,15 @@ function CodeStep({ email, type, invite, onVerify, onResend, onBack, firstNote }
   // Compte à rebours avant « Renvoyer le code »
   useEffect(() => {
     if (wait <= 0) return
-    const t = setTimeout(() => setWait((w) => w - 1), 1000)
-    return () => clearTimeout(t)
+    const tx = setTimeout(() => setWait((w) => w - 1), 1000)
+    return () => clearTimeout(tx)
   }, [wait])
 
   async function verify(value = code) {
     if (busy) return
     const digits = value.replace(/\D/g, '')
     if (digits.length < 6) {
-      setError('Le code contient au moins 6 chiffres.')
+      setError(t('Le code contient au moins 6 chiffres.'))
       inputRef.current?.focus()
       return
     }
@@ -70,7 +71,7 @@ function CodeStep({ email, type, invite, onVerify, onResend, onBack, firstNote }
     const err = await onResend()
     if (err) setError(err)
     else {
-      setNote('Nouveau code envoyé. Seul le dernier reçu fonctionne.')
+      setNote(t('Nouveau code envoyé. Seul le dernier reçu fonctionne.'))
       setCode('')
       setWait(RESEND_DELAY)
       inputRef.current?.focus()
@@ -80,10 +81,9 @@ function CodeStep({ email, type, invite, onVerify, onResend, onBack, firstNote }
   return (
     <div className="mt-2">
       <p className="text-sm text-muted">
-        {type === 'recovery' ? 'Si un compte existe pour ' : 'On a envoyé un code à '}
+        {type === 'recovery' ? t('Si un compte existe pour') : t('On a envoyé un code à')}{' '}
         <span className="font-bold text-paper">{email}</span>
-        {type === 'recovery' ? ', un code vient d’y être envoyé.' : '.'} Tape-le ici, ou touche le bouton dans le mail.
-      </p>
+        {type === 'recovery' ? t(', un code vient d’y être envoyé.') : '.'}{' '}{t('Tape-le ici, ou touche le bouton dans le mail.')}</p>
       {note && <p className="mt-4 rounded-2xl bg-accent/10 px-4 py-3 text-sm text-accent">{note}</p>}
       <form
         className="mt-5"
@@ -93,9 +93,7 @@ function CodeStep({ email, type, invite, onVerify, onResend, onBack, firstNote }
           verify()
         }}
       >
-        <label htmlFor="auth-code" className="block text-xs font-medium text-muted">
-          Code reçu par mail
-        </label>
+        <label htmlFor="auth-code" className="block text-xs font-medium text-muted">{t('Code reçu par mail')}</label>
         <input
           ref={inputRef}
           id="auth-code"
@@ -116,17 +114,14 @@ function CodeStep({ email, type, invite, onVerify, onResend, onBack, firstNote }
           disabled={busy}
           className="mt-4 w-full rounded-full bg-accent py-3 font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
         >
-          {busy ? '…' : type === 'recovery' ? 'Continuer' : invite ? 'Activer et rejoindre le salon' : 'Activer mon compte'}
+          {busy ? '…' : type === 'recovery' ? t('Continuer') : invite ? t('Activer et rejoindre le salon') : t('Activer mon compte')}
         </button>
       </form>
-      <p className="mt-4 text-center text-xs text-muted">
-        Pas reçu ? Regarde dans les spams, ou{' '}
+      <p className="mt-4 text-center text-xs text-muted">{t('Pas reçu ? Regarde dans les spams, ou')}{' '}
         {wait > 0 ? (
-          <span>redemande-le dans {wait} s</span>
+          <span>{t('redemande-le dans {wait} s', { wait })}</span>
         ) : (
-          <button type="button" onClick={resend} className="font-bold text-paper underline underline-offset-2">
-            renvoie le code
-          </button>
+          <button type="button" onClick={resend} className="font-bold text-paper underline underline-offset-2">{t('renvoie le code')}</button>
         )}
         .
       </p>
@@ -134,9 +129,7 @@ function CodeStep({ email, type, invite, onVerify, onResend, onBack, firstNote }
         type="button"
         onClick={onBack}
         className="mt-3 w-full text-center text-xs text-muted underline-offset-2 hover:text-paper hover:underline"
-      >
-        ← Changer d’email
-      </button>
+      >{t('← Changer d’email')}</button>
     </div>
   )
 }
@@ -180,7 +173,7 @@ export default function AuthDialog({
   const refs = { name: useRef(null), email: useRef(null), password: useRef(null), confirm: useRef(null) }
 
   const creating = mode === 'signup' || mode === 'recovery' // un nouveau mot de passe est choisi
-  const touch = (k) => () => setTouched((t) => ({ ...t, [k]: true }))
+  const touch = (k) => () => setTouched((tx) => ({ ...tx, [k]: true }))
   const shown = (k) => submitted || touched[k]
 
   // Pseudo déjà pris ? On vérifie pendant qu'on tape (seulement s'il respecte les règles)
@@ -201,11 +194,11 @@ export default function AuthDialog({
   // Erreurs de chaque champ
   const ruleError = mode === 'signup' ? pseudoError(name) : null
   const errors = {
-    name: mode !== 'signup' ? null : ruleError || (taken ? 'Ce pseudo est déjà pris, choisis-en un autre.' : null),
+    name: mode !== 'signup' ? null : ruleError || (taken ? t('Ce pseudo est déjà pris, choisis-en un autre.') : null),
     email: mode === 'recovery' ? null : emailError(email),
     password:
-      mode === 'forgot' ? null : creating ? passwordError(password) : password ? null : 'Indique ton mot de passe.',
-    confirm: !creating ? null : !confirm ? 'Confirme ton mot de passe.' : confirm !== password ? 'Les deux mots de passe ne sont pas identiques.' : null,
+      mode === 'forgot' ? null : creating ? passwordError(password) : password ? null : t('Indique ton mot de passe.'),
+    confirm: !creating ? null : !confirm ? t('Confirme ton mot de passe.') : confirm !== password ? t('Les deux mots de passe ne sont pas identiques.') : null,
   }
   // Ce qu'on affiche : après avoir quitté le champ (ou validé) ; « déjà pris » et
   // les caractères interdits tout de suite
@@ -255,7 +248,7 @@ export default function AuthDialog({
       // Compte pas encore activé : on propose de taper le code
       if (err && /pas encore activé/.test(err) && onVerifyCode) {
         setBusy(false)
-        setPending({ email: mail, note: 'Ton compte n’est pas encore activé. Tape le code reçu par mail à l’inscription, ou demandes-en un nouveau.' })
+        setPending({ email: mail, note: t('Ton compte n’est pas encore activé. Tape le code reçu par mail à l’inscription, ou demandes-en un nouveau.') })
         setMode('verify')
         return
       }
@@ -267,7 +260,7 @@ export default function AuthDialog({
           setPending({ email: mail })
           setMode('verify')
         } else {
-          setInfo(`Presque fini ! Touche le bouton du mail envoyé à ${mail} pour activer ton compte${invite ? ' et rejoindre le salon' : ''}.`)
+          setInfo(t('Presque fini ! Touche le bouton du mail envoyé à {mail} pour activer ton compte{v1}.', { mail, v1: invite ? ' ' + t('et rejoindre le salon') : '' }))
         }
       }
     } else if (mode === 'forgot') {
@@ -276,7 +269,7 @@ export default function AuthDialog({
         if (onVerifyCode) {
           setPending({ email: mail })
           setMode('forgotCode')
-        } else setInfo(`Si un compte existe pour ${mail}, un mail vient de lui être envoyé.`)
+        } else setInfo(t('Si un compte existe pour {mail}, un mail vient de lui être envoyé.', { mail }))
       }
     } else if (mode === 'recovery') {
       err = await onUpdatePassword(password)
@@ -290,10 +283,10 @@ export default function AuthDialog({
   const tabs = mode === 'login' || mode === 'signup'
   const codeStep = (mode === 'verify' || mode === 'forgotCode') && pending
   const submitLabel = {
-    login: 'Se connecter',
-    signup: invite ? 'Créer et rejoindre le salon' : 'Créer mon compte',
-    forgot: 'Envoyer le code',
-    recovery: 'Enregistrer',
+    login: t('Se connecter'),
+    signup: invite ? t('Créer et rejoindre le salon') : t('Créer mon compte'),
+    forgot: t('Envoyer le code'),
+    recovery: t('Enregistrer'),
   }[mode]
   const passed = PASSWORD_RULES.filter((r) => r.test(password)).length
 
@@ -303,7 +296,7 @@ export default function AuthDialog({
       type="button"
       onMouseDown={(e) => e.preventDefault()} // garde le curseur dans le champ (rien ne bouge sous le doigt)
       onClick={toggle}
-      aria-label={shown ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+      aria-label={shown ? t('Masquer le mot de passe') : t('Afficher le mot de passe')}
       aria-pressed={shown}
       className="absolute inset-y-0 right-2 my-auto flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-raised hover:text-paper"
     >
@@ -327,8 +320,7 @@ export default function AuthDialog({
           <div className="flex items-center gap-3 bg-accent px-6 py-4 text-ink">
             <AvatarStack members={invite.members} size={30} />
             <p className="text-sm leading-snug">
-              <span className="font-bold">{invite.members[0]?.name}</span> t'invite dans
-              le salon <span className="font-bold">« {invite.name} »</span>
+              <span className="font-bold">{invite.members[0]?.name}</span>{' '}{t('t\'invite dans le salon')}{' '}<span className="font-bold">« {invite.name} »</span>
             </p>
           </div>
         )}
@@ -337,7 +329,7 @@ export default function AuthDialog({
           {onClose && (
             <button
               onClick={onClose}
-              aria-label="Fermer"
+              aria-label={t('Fermer')}
               className="absolute right-4 top-4 rounded-full p-1.5 text-muted transition hover:bg-raised hover:text-paper"
             >
               <CloseIcon width={18} height={18} />
@@ -347,8 +339,8 @@ export default function AuthDialog({
           {tabs && (
             <div role="tablist" className="mb-5 mr-8 flex rounded-full bg-raised p-1 text-sm">
               {[
-                ['login', 'Connexion'],
-                ['signup', 'Créer un compte'],
+                ['login', t('Connexion')],
+                ['signup', t('Créer un compte')],
               ].map(([v, l]) => (
                 <button
                   key={v}
@@ -389,9 +381,7 @@ export default function AuthDialog({
             <form className="mt-5 space-y-3" onSubmit={submit} noValidate>
               {mode === 'signup' && (
                 <div>
-                <label className="block text-xs font-medium text-muted">
-                  Pseudo
-                  <input
+                <label className="block text-xs font-medium text-muted">{t('Pseudo')}<input
                     ref={refs.name}
                     className={`${field} ${visible.name ? fieldError : ''}`}
                     value={name}
@@ -404,7 +394,7 @@ export default function AuthDialog({
                     aria-describedby={visible.name ? 'err-name' : undefined}
                     onChange={(e) => setName(e.target.value)}
                     onBlur={touch('name')}
-                    placeholder="3 à 20 caractères, sans espace"
+                    placeholder={t('3 à 20 caractères, sans espace')}
                   />
                 </label>
                 <Err id="err-name">{visible.name}</Err>
@@ -413,9 +403,7 @@ export default function AuthDialog({
 
               {mode !== 'recovery' && (
                 <div>
-                <label className="block text-xs font-medium text-muted">
-                  Email
-                  <input
+                <label className="block text-xs font-medium text-muted">{t('Email')}<input
                     ref={refs.email}
                     type="email"
                     inputMode="email"
@@ -430,14 +418,12 @@ export default function AuthDialog({
                     aria-describedby={visible.email ? 'err-email' : undefined}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={touch('email')}
-                    placeholder="toi@exemple.fr"
+                    placeholder={'toi@exemple.fr'}
                   />
                 </label>
                   <Err id="err-email">{visible.email}</Err>
                   {!visible.email && suggestion && (
-                    <span className="mt-1.5 block text-xs font-normal text-muted">
-                      Tu voulais dire{' '}
-                      <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setEmail(suggestion)} className="font-bold text-paper underline underline-offset-2">
+                    <span className="mt-1.5 block text-xs font-normal text-muted">{t('Tu voulais dire')}{' '}<button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setEmail(suggestion)} className="font-bold text-paper underline underline-offset-2">
                         {suggestion}
                       </button>{' '}
                       ?
@@ -449,7 +435,7 @@ export default function AuthDialog({
               {mode !== 'forgot' && (
                 <div>
                   <label htmlFor="auth-password" className="block text-xs font-medium text-muted">
-                    {mode === 'recovery' ? 'Nouveau mot de passe' : 'Mot de passe'}
+                    {mode === 'recovery' ? t('Nouveau mot de passe') : t('Mot de passe')}
                   </label>
                   {/* L'œil est centré sur le champ */}
                   <div className="relative mt-1.5">
@@ -497,7 +483,7 @@ export default function AuthDialog({
                             <li key={r.id} className={`flex items-center gap-1.5 ${okRule ? 'text-accent' : submitted ? 'text-red-500' : 'text-muted'}`}>
                               <span aria-hidden="true" className="w-3 text-center">{okRule ? '✓' : '•'}</span>
                               {r.label}
-                              <span className="sr-only">{okRule ? ' : respecté' : ' : manquant'}</span>
+                              <span className="sr-only">{' : '}{okRule ? t('respecté') : t('manquant')}</span>
                             </li>
                           )
                         })}
@@ -509,9 +495,7 @@ export default function AuthDialog({
 
               {creating && (
                 <div>
-                <label htmlFor="auth-confirm" className="block text-xs font-medium text-muted">
-                  Confirme le mot de passe
-                </label>
+                <label htmlFor="auth-confirm" className="block text-xs font-medium text-muted">{t('Confirme le mot de passe')}</label>
                 <div className="relative mt-1.5">
                   <input
                     ref={refs.confirm}
@@ -550,17 +534,13 @@ export default function AuthDialog({
             <button
               onClick={() => switchTo('forgot')}
               className="mt-3 w-full text-center text-xs text-muted underline-offset-2 hover:text-paper hover:underline"
-            >
-              Mot de passe oublié ?
-            </button>
+            >{t('Mot de passe oublié ?')}</button>
           )}
           {mode === 'forgot' && (
             <button
               onClick={() => switchTo('login')}
               className="mt-3 w-full text-center text-xs text-muted underline-offset-2 hover:text-paper hover:underline"
-            >
-              ← Retour à la connexion
-            </button>
+            >{t('← Retour à la connexion')}</button>
           )}
         </div>
       </div>

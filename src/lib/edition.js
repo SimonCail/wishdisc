@@ -1,3 +1,4 @@
+import { t } from './i18n'
 // --- « Mon édition » : couleur, signé, numéroté, type d'édition, état ---
 // Tout est rangé dans la colonne vinyls.edition (jsonb), rempli par l'utilisateur.
 // Forme : { color, signed, number, of, kind, shop, condition, exact }
@@ -8,36 +9,36 @@
 //   exact     : souhait seulement. true = cette édition précise, false = peu importe
 
 export const COLORS = [
-  { key: 'black', label: 'Noir', swatch: '#151515' },
-  { key: 'white', label: 'Blanc', swatch: '#f4f1ea' },
-  { key: 'red', label: 'Rouge', swatch: '#d8342c' },
-  { key: 'orange', label: 'Orange', swatch: '#ef7d22' },
-  { key: 'yellow', label: 'Jaune', swatch: '#f3c623' },
-  { key: 'green', label: 'Vert', swatch: '#2f9a57' },
-  { key: 'blue', label: 'Bleu', swatch: '#2b62c9' },
-  { key: 'purple', label: 'Violet', swatch: '#7a45c4' },
-  { key: 'pink', label: 'Rose', swatch: '#ef8fb5' },
-  { key: 'gold', label: 'Or', swatch: 'linear-gradient(135deg,#f6dd8a,#b8862b 60%,#f3d277)' },
-  { key: 'clear', label: 'Transparent', swatch: 'linear-gradient(135deg,rgba(255,255,255,.85),rgba(200,220,230,.35))' },
-  { key: 'marbled', label: 'Marbré', swatch: 'conic-gradient(from 30deg,#d8342c,#f4f1ea,#2b62c9,#f4f1ea,#d8342c)' },
-  { key: 'splatter', label: 'Splatter', swatch: 'radial-gradient(circle at 30% 35%,#151515 0 14%,transparent 15%),radial-gradient(circle at 68% 62%,#d8342c 0 13%,transparent 14%),radial-gradient(circle at 60% 25%,#151515 0 8%,transparent 9%),#f3c623' },
-  { key: 'picture', label: 'Picture disc', swatch: 'linear-gradient(135deg,#ef8fb5,#f3c623 50%,#2b62c9)' },
+  { key: 'black', label: t('Noir'), swatch: '#151515' },
+  { key: 'white', label: t('Blanc'), swatch: '#f4f1ea' },
+  { key: 'red', label: t('Rouge'), swatch: '#d8342c' },
+  { key: 'orange', label: t('Orange'), swatch: '#ef7d22' },
+  { key: 'yellow', label: t('Jaune'), swatch: '#f3c623' },
+  { key: 'green', label: t('Vert'), swatch: '#2f9a57' },
+  { key: 'blue', label: t('Bleu'), swatch: '#2b62c9' },
+  { key: 'purple', label: t('Violet'), swatch: '#7a45c4' },
+  { key: 'pink', label: t('Rose'), swatch: '#ef8fb5' },
+  { key: 'gold', label: t('Or'), swatch: 'linear-gradient(135deg,#f6dd8a,#b8862b 60%,#f3d277)' },
+  { key: 'clear', label: t('Transparent'), swatch: 'linear-gradient(135deg,rgba(255,255,255,.85),rgba(200,220,230,.35))' },
+  { key: 'marbled', label: t('Marbré'), swatch: 'conic-gradient(from 30deg,#d8342c,#f4f1ea,#2b62c9,#f4f1ea,#d8342c)' },
+  { key: 'splatter', label: t('Splatter'), swatch: 'radial-gradient(circle at 30% 35%,#151515 0 14%,transparent 15%),radial-gradient(circle at 68% 62%,#d8342c 0 13%,transparent 14%),radial-gradient(circle at 60% 25%,#151515 0 8%,transparent 9%),#f3c623' },
+  { key: 'picture', label: t('Picture disc'), swatch: 'linear-gradient(135deg,#ef8fb5,#f3c623 50%,#2b62c9)' },
 ]
 const COLOR_BY_KEY = new Map(COLORS.map((c) => [c.key, c]))
 
 export const KINDS = [
-  { key: 'limited', label: 'Édition limitée' },
-  { key: 'exclusive', label: 'Exclusivité' },
-  { key: 'original', label: 'Pressage d’origine' },
-  { key: 'reissue', label: 'Réédition' },
+  { key: 'limited', label: t('Édition limitée') },
+  { key: 'exclusive', label: t('Exclusivité') },
+  { key: 'original', label: t('Pressage d’origine') },
+  { key: 'reissue', label: t('Réédition') },
 ]
 const KIND_BY_KEY = new Map(KINDS.map((k) => [k.key, k]))
 
 export const CONDITIONS = [
-  { key: 'sealed', label: 'Neuf, scellé' },
-  { key: 'mint', label: 'Comme neuf' },
-  { key: 'good', label: 'Bon état' },
-  { key: 'worn', label: 'Abîmé' },
+  { key: 'sealed', label: t('Neuf, scellé') },
+  { key: 'mint', label: t('Comme neuf') },
+  { key: 'good', label: t('Bon état') },
+  { key: 'worn', label: t('Abîmé') },
 ]
 const CONDITION_BY_KEY = new Map(CONDITIONS.map((c) => [c.key, c]))
 
@@ -75,7 +76,7 @@ export function normalizeEdition(ed, mode) {
 export const hasEdition = (ed) => !!ed && Object.keys(ed).length > 0
 
 const numberLabel = (ed) =>
-  ed.number ? `N° ${ed.number}${ed.of ? ` sur ${ed.of}` : ''}` : ed.of ? `Tirage à ${ed.of}` : null
+  ed.number ? (ed.of ? t('N° {number} sur {of}', { number: ed.number, of: ed.of }) : t('N° {number}', { number: ed.number })) : ed.of ? t('Tirage à {of}', { of: ed.of }) : null
 
 // Les étiquettes à afficher (fiche complète)
 export function editionTags(ed, mode) {
@@ -83,7 +84,7 @@ export function editionTags(ed, mode) {
   const tags = []
   const color = colorOf(ed)
   if (color) tags.push({ key: 'color', label: color.label, swatch: color.swatch ?? 'neutral' })
-  if (ed.signed) tags.push({ key: 'signed', label: 'Signé', icon: 'pen' })
+  if (ed.signed) tags.push({ key: 'signed', label: t('Signé'), icon: 'pen' })
   const num = numberLabel(ed)
   if (num) tags.push({ key: 'number', label: num })
   if (ed.kind) {
@@ -94,8 +95,8 @@ export function editionTags(ed, mode) {
     const c = CONDITION_BY_KEY.get(ed.condition)
     if (c) tags.push({ key: 'condition', label: c.label })
   }
-  if (mode === 'wish' && ed.exact === true) tags.push({ key: 'exact', label: 'Cette édition précise', strong: true })
-  if (mode === 'wish' && ed.exact === false) tags.push({ key: 'exact', label: 'Peu importe l’édition' })
+  if (mode === 'wish' && ed.exact === true) tags.push({ key: 'exact', label: t('Cette édition précise'), strong: true })
+  if (mode === 'wish' && ed.exact === false) tags.push({ key: 'exact', label: t('Peu importe l’édition') })
   return tags
 }
 
@@ -105,23 +106,23 @@ export function cardTags(ed) {
   const tags = []
   const color = colorOf(ed)
   if (color && color.key !== 'black') tags.push({ key: 'color', label: color.label, swatch: color.swatch ?? 'neutral' })
-  if (ed.signed) tags.push({ key: 'signed', label: 'Signé', icon: 'pen' })
+  if (ed.signed) tags.push({ key: 'signed', label: t('Signé'), icon: 'pen' })
   if (tags.length < 2) {
     const num = numberLabel(ed)
-    if (num) tags.push({ key: 'number', label: ed.number ? `N° ${ed.number}` : num })
+    if (num) tags.push({ key: 'number', label: ed.number ? t('N° {number}', { number: ed.number }) : num })
   }
   if (tags.length < 2 && (ed.kind === 'limited' || ed.kind === 'exclusive')) {
-    tags.push({ key: 'kind', label: ed.kind === 'exclusive' ? (ed.shop ? `Exclu ${ed.shop}` : 'Exclu') : 'Limitée' })
+    tags.push({ key: 'kind', label: ed.kind === 'exclusive' ? (ed.shop ? `Exclu ${ed.shop}` : t('Exclu')) : t('Limitée') })
   }
   return tags.slice(0, 2)
 }
 
 // --- Filtre « Particularités » ---
 export const SPECIALS = [
-  { key: 'signed', label: 'Signés', test: (ed) => !!ed?.signed },
-  { key: 'colored', label: 'En couleur', test: (ed) => !!ed?.color && ed.color !== 'black' },
-  { key: 'numbered', label: 'Numérotés', test: (ed) => !!(ed?.number || ed?.of) },
-  { key: 'limited', label: 'Limités ou exclus', test: (ed) => ed?.kind === 'limited' || ed?.kind === 'exclusive' },
+  { key: 'signed', label: t('Signés'), test: (ed) => !!ed?.signed },
+  { key: 'colored', label: t('En couleur'), test: (ed) => !!ed?.color && ed.color !== 'black' },
+  { key: 'numbered', label: t('Numérotés'), test: (ed) => !!(ed?.number || ed?.of) },
+  { key: 'limited', label: t('Limités ou exclus'), test: (ed) => ed?.kind === 'limited' || ed?.kind === 'exclusive' },
 ]
 const SPECIAL_BY_KEY = new Map(SPECIALS.map((s) => [s.key, s]))
 
@@ -139,10 +140,10 @@ export function getSpecials(list) {
 // { label, easy } ou null. easy = n'importe quel pressage fait l'affaire.
 export function giftEditionHint(ed) {
   if (!hasEdition(ed)) return null
-  if (ed.exact === false) return { label: 'Peu importe l’édition', easy: true }
+  if (ed.exact === false) return { label: t('Peu importe l’édition'), easy: true }
   if (ed.exact !== true) return null
   const parts = editionTags(ed, 'wish')
-    .filter((t) => t.key !== 'exact')
-    .map((t) => (t.key === 'color' ? t.label.toLowerCase() : t.label.toLowerCase()))
-  return { label: parts.length ? `Édition ${parts.join(', ')}` : 'Cette édition précise', easy: false }
+    .filter((tx) => tx.key !== 'exact')
+    .map((tx) => (tx.key === 'color' ? tx.label.toLowerCase() : tx.label.toLowerCase()))
+  return { label: parts.length ? t('Édition {join}', { join: parts.join(', ') }) : t('Cette édition précise'), easy: false }
 }

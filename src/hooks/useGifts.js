@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { t } from '../lib/i18n'
 
 // « Je l'offre » : les disques réservés pour être offerts.
 // La base ne renvoie que les réservations sur les disques des AUTRES :
@@ -43,7 +44,7 @@ export function useGifts(userId) {
   async function reserve(vinylId) {
     const { error } = await supabase.from('gift_reservations').insert({ vinyl_id: vinylId, reserved_by: userId })
     if (error) {
-      return error.code === '23505' ? 'Quelqu’un vient de le réserver, juste avant toi.' : error.message
+      return error.code === '23505' ? t('Quelqu’un vient de le réserver, juste avant toi.') : error.message
     }
     setList((prev) => [...prev, { vinyl_id: vinylId, reserved_by: userId, created_at: new Date().toISOString() }])
     return null

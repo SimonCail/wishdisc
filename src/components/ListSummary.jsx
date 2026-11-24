@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatPrice } from '../lib/format'
+import { t, tn } from '../lib/i18n'
 
 // Valeur de la liste.
 // Ordinateur : un encart avec le grand prix.
@@ -10,9 +11,9 @@ export default function ListSummary({ totals, label, note }) {
   const count = pricedCount + unpricedCount
   const detail = pricedCount
     ? `${note} — ${pricedCount} disque${pricedCount > 1 ? 's' : ''}${
-        unpricedCount ? `, ${unpricedCount} sans prix` : ''
+        unpricedCount ? t(', {unpricedCount} sans prix', { unpricedCount }) : ''
       }. Indicatif.`
-    : 'Pas encore de prix : utilise « Compléter les infos » au-dessus.'
+    : t('Pas encore de prix : utilise « Compléter les infos » au-dessus.')
 
   return (
     <>
@@ -29,7 +30,7 @@ export default function ListSummary({ totals, label, note }) {
               {pricedCount ? formatPrice(total) : '—'}
             </span>
             <span className="text-xs text-muted">
-              {count} disque{count > 1 ? 's' : ''}
+              {tn(count, '{n} disque', '{n} disques')}
             </span>
           </span>
         </span>
@@ -43,7 +44,7 @@ export default function ListSummary({ totals, label, note }) {
           {pricedCount > 0 ? (
             <p className="mt-1 font-display text-5xl font-black leading-none text-accent">{formatPrice(total)}</p>
           ) : (
-            <p className="mt-1 text-sm text-muted">Pas encore de prix : utilise « Compléter les infos » au-dessus.</p>
+            <p className="mt-1 text-sm text-muted">{t('Pas encore de prix : utilise « Compléter les infos » au-dessus.')}</p>
           )}
         </div>
         {pricedCount > 0 && <p className="max-w-xs text-xs text-muted sm:text-right">{detail}</p>}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CloseIcon } from './Icons'
+import { t } from '../lib/i18n'
 
 const MAX_ZOOM = 5
 
@@ -33,9 +34,9 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
   // L'image doit toujours couvrir tout le cadre : on borne le déplacement
   const clamp = useCallback(
     (v) => {
-      const t = v.rotation % 180 !== 0
-      const w = t ? photo.height : photo.width
-      const h = t ? photo.width : photo.height
+      const tx = v.rotation % 180 !== 0
+      const w = tx ? photo.height : photo.width
+      const h = tx ? photo.width : photo.height
       const s = (size / Math.min(w, h)) * v.zoom
       const mx = Math.max(0, (w * s - size) / 2)
       const my = Math.max(0, (h * s - size) / 2)
@@ -140,21 +141,19 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Recadrer ta photo"
+        aria-label={t('Recadrer ta photo')}
         className="animate-pop w-full max-w-md rounded-t-3xl bg-surface p-5 shadow-2xl shadow-black/60 sm:rounded-3xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="font-display text-3xl font-black uppercase leading-[0.9]">Recadre ta photo</h3>
-            <p className="mt-2 text-sm text-muted">
-              Fais glisser pour la placer, pince ou utilise le curseur pour zoomer.
-            </p>
+            <h3 className="font-display text-3xl font-black uppercase leading-[0.9]">{t('Recadre ta photo')}</h3>
+            <p className="mt-2 text-sm text-muted">{t('Fais glisser pour la placer, pince ou utilise le curseur pour zoomer.')}</p>
           </div>
           <button
             onClick={onCancel}
             disabled={busy}
-            aria-label="Annuler"
+            aria-label={t('Annuler')}
             className="-mr-1 -mt-1 shrink-0 rounded-full p-1.5 text-muted transition hover:bg-raised hover:text-paper"
           >
             <CloseIcon width={20} height={20} />
@@ -165,7 +164,7 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
           ref={frameRef}
           tabIndex={0}
           role="application"
-          aria-label="Zone de recadrage : flèches pour déplacer, plus et moins pour zoomer"
+          aria-label={t('Zone de recadrage : flèches pour déplacer, plus et moins pour zoomer')}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -197,7 +196,7 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
         <div className="mx-auto mt-5 flex max-w-[20rem] items-center gap-3">
           <button
             onClick={() => zoomTo(view.zoom / 1.25)}
-            aria-label="Dézoomer"
+            aria-label={t('Dézoomer')}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-lg leading-none text-muted transition hover:border-accent hover:text-paper"
           >
             −
@@ -209,12 +208,12 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
             step={0.01}
             value={view.zoom}
             onChange={(e) => zoomTo(Number(e.target.value))}
-            aria-label="Zoom"
+            aria-label={t('Zoom')}
             className="h-1.5 w-full cursor-pointer accent-[var(--color-accent)]"
           />
           <button
             onClick={() => zoomTo(view.zoom * 1.25)}
-            aria-label="Zoomer"
+            aria-label={t('Zoomer')}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-lg leading-none text-muted transition hover:border-accent hover:text-paper"
           >
             +
@@ -223,11 +222,8 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
 
         <div className="mx-auto mt-3 flex max-w-[20rem] justify-center gap-2">
           <button onClick={rotate} className="flex items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm transition hover:border-accent hover:bg-raised">
-            <RotateIcon /> Pivoter
-          </button>
-          <button onClick={reset} className="rounded-full px-3.5 py-1.5 text-sm text-muted transition hover:bg-raised hover:text-paper">
-            Recentrer
-          </button>
+            <RotateIcon />{' '}{t('Pivoter')}</button>
+          <button onClick={reset} className="rounded-full px-3.5 py-1.5 text-sm text-muted transition hover:bg-raised hover:text-paper">{t('Recentrer')}</button>
         </div>
 
         {error && <p className="mt-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{error}</p>}
@@ -237,15 +233,13 @@ export default function AvatarCropper({ photo, busy, error, onConfirm, onCancel 
             onClick={onCancel}
             disabled={busy}
             className="flex-1 rounded-full border border-line py-2.5 font-medium transition hover:bg-raised disabled:opacity-50"
-          >
-            Annuler
-          </button>
+          >{t('Annuler')}</button>
           <button
             onClick={() => onConfirm({ size, scale, x: view.x, y: view.y, rotation: view.rotation })}
             disabled={busy}
             className="flex-1 rounded-full bg-accent py-2.5 font-bold text-ink transition hover:bg-accent-soft disabled:opacity-60"
           >
-            {busy ? 'Envoi…' : 'Utiliser cette photo'}
+            {busy ? t('Envoi…') : t('Utiliser cette photo')}
           </button>
         </div>
       </div>

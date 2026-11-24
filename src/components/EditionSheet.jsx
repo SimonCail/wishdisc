@@ -4,6 +4,7 @@ import { btn } from '../lib/ui'
 import { COLORS, CONDITIONS, KINDS, normalizeEdition } from '../lib/edition'
 import { Swatch, PenIcon } from './EditionTags'
 import { CloseIcon } from './Icons'
+import { t } from '../lib/i18n'
 
 const KNOWN = new Set(COLORS.map((c) => c.key))
 
@@ -89,25 +90,23 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
       >
         <header className="flex items-start gap-3 px-5 pb-2 pt-5">
           <div className="min-w-0 flex-1">
-            <h3 id="edition-title" className="font-display text-xl font-bold">
-              Mon édition
-            </h3>
+            <h3 id="edition-title" className="font-display text-xl font-bold">{t('Mon édition')}</h3>
             <p className="truncate text-sm text-muted">
               {vinyl.title} · {vinyl.artist}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className={`${btn.icon} -mr-2 -mt-2`}>
+          <button type="button" onClick={onClose} aria-label={t('Fermer')} className={`${btn.icon} -mr-2 -mt-2`}>
             <CloseIcon width={18} height={18} />
           </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">
           {mode === 'wish' && (
-            <Section title="Ce que tu veux" hint="Tes proches sauront si n’importe quel pressage te fait plaisir.">
+            <Section title={t('Ce que tu veux')} hint={t('Tes proches sauront si n’importe quel pressage te fait plaisir.')}>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  [false, 'Peu importe l’édition'],
-                  [true, 'Cette édition précise'],
+                  [false, t('Peu importe l’édition')],
+                  [true, t('Cette édition précise')],
                 ].map(([value, label]) => (
                   <button
                     key={label}
@@ -125,7 +124,7 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
             </Section>
           )}
 
-          <Section title="Couleur du vinyle">
+          <Section title={t('Couleur du vinyle')}>
             <div className="grid grid-cols-5 gap-x-1 gap-y-3 sm:grid-cols-6">
               {COLORS.map((c) => {
                 const active = !otherColor && ed.color === c.key
@@ -165,31 +164,31 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
                     otherColor ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : 'group-hover:scale-105'
                   }`}
                 >
-                  <Swatch swatch="neutral" size={34} />
+                  <Swatch swatch={'neutral'} size={34} />
                 </span>
-                <span className={otherColor ? 'font-bold' : 'text-muted'}>Autre</span>
+                <span className={otherColor ? 'font-bold' : 'text-muted'}>{t('Autre')}</span>
               </button>
             </div>
             {otherColor && (
               <input
                 value={ed.color}
                 onChange={(e) => set({ color: e.target.value })}
-                placeholder="Ex. vert sapin, bleu nuit translucide…"
+                placeholder={t('Ex. vert sapin, bleu nuit translucide…')}
                 maxLength={40}
-                aria-label="Couleur du vinyle"
+                aria-label={t('Couleur du vinyle')}
                 className={`${field} mt-3`}
               />
             )}
           </Section>
 
-          <Section title="Signé">
+          <Section title={t('Signé')}>
             <label className="flex cursor-pointer items-center gap-3">
               <span className="text-muted">
                 <PenIcon width={20} height={20} />
               </span>
               <span className="flex-1">
-                <span className="block font-bold">Signé ou dédicacé</span>
-                <span className="block text-xs text-muted">Par l’artiste, sur la pochette ou le disque</span>
+                <span className="block font-bold">{t('Signé ou dédicacé')}</span>
+                <span className="block text-xs text-muted">{t('Par l’artiste, sur la pochette ou le disque')}</span>
               </span>
               <input type="checkbox" className="peer sr-only" checked={ed.signed} onChange={(e) => set({ signed: e.target.checked })} />
               <span
@@ -201,7 +200,7 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
             </label>
           </Section>
 
-          <Section title="Numéroté" hint="Le numéro écrit sur la pochette, et le tirage total si tu le connais.">
+          <Section title={t('Numéroté')} hint={t('Le numéro écrit sur la pochette, et le tirage total si tu le connais.')}>
             <div className="flex items-center gap-2">
               <span className="font-mono text-sm text-muted">N°</span>
               <input
@@ -209,22 +208,22 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
                 onChange={(e) => set({ number: e.target.value.replace(/\D/g, '').slice(0, 7) })}
                 inputMode="numeric"
                 placeholder="245"
-                aria-label="Numéro"
+                aria-label={t('Numéro')}
                 className={`${field} w-24 text-center`}
               />
-              <span className="text-sm text-muted">sur</span>
+              <span className="text-sm text-muted">{t('sur')}</span>
               <input
                 value={ed.of}
                 onChange={(e) => set({ of: e.target.value.replace(/\D/g, '').slice(0, 7) })}
                 inputMode="numeric"
                 placeholder="1000"
-                aria-label="Tirage total"
+                aria-label={t('Tirage total')}
                 className={`${field} w-28 text-center`}
               />
             </div>
           </Section>
 
-          <Section title="Édition">
+          <Section title={t('Édition')}>
             <div className="flex flex-wrap gap-2">
               {KINDS.map((k) => (
                 <Pill key={k.key} active={ed.kind === k.key} onClick={() => set({ kind: ed.kind === k.key ? '' : k.key })}>
@@ -236,16 +235,16 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
               <input
                 value={ed.shop}
                 onChange={(e) => set({ shop: e.target.value })}
-                placeholder="Chez qui ? Fnac, Rough Trade, le site de l’artiste…"
+                placeholder={t('Chez qui ? Fnac, Rough Trade, le site de l’artiste…')}
                 maxLength={40}
-                aria-label="Exclusivité de"
+                aria-label={t('Exclusivité de')}
                 className={`${field} mt-3`}
               />
             )}
           </Section>
 
           {mode === 'owned' && (
-            <Section title="État">
+            <Section title={t('État')}>
               <div className="flex flex-wrap gap-2">
                 {CONDITIONS.map((c) => (
                   <Pill key={c.key} active={ed.condition === c.key} onClick={() => set({ condition: ed.condition === c.key ? '' : c.key })}>
@@ -261,11 +260,9 @@ export default function EditionSheet({ vinyl, mode, onSave, onClose }) {
           className="flex items-center gap-2 border-t border-line/70 px-5 pt-3"
           style={{ paddingBottom: area.keyboard ? '0.75rem' : 'max(0.75rem, env(safe-area-inset-bottom))' }}
         >
-          <button type="button" onClick={clearAll} className={btn.quiet}>
-            Tout effacer
-          </button>
+          <button type="button" onClick={clearAll} className={btn.quiet}>{t('Tout effacer')}</button>
           <button type="submit" disabled={saving} className={`${btn.primary} ml-auto min-w-[8.5rem]`}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? t('Enregistrement…') : t('Enregistrer')}
           </button>
         </footer>
       </form>

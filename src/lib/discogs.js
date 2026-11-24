@@ -1,3 +1,4 @@
+import { t } from './i18n'
 const BASE = 'https://api.discogs.com'
 const token = import.meta.env.VITE_DISCOGS_TOKEN
 const MAX_PAGES = 5
@@ -10,14 +11,14 @@ async function discogsFetch(path, params = {}) {
   try {
     response = await fetch(`${BASE}${path}?${qs}`)
   } catch {
-    throw new Error('Connexion impossible. Vérifie ton réseau.')
+    throw new Error(t('Connexion impossible. Vérifie ton réseau.'))
   }
 
   if (response.status === 429) {
-    throw Object.assign(new Error('Trop de requêtes Discogs, réessaie dans une minute.'), { status: 429 })
+    throw Object.assign(new Error(t('Trop de requêtes Discogs, réessaie dans une minute.')), { status: 429 })
   }
   if (!response.ok) {
-    throw Object.assign(new Error(`Erreur Discogs (${response.status})`), { status: response.status })
+    throw Object.assign(new Error(t('Erreur Discogs ({status})', { status: response.status })), { status: response.status })
   }
   return response.json()
 }
@@ -79,7 +80,7 @@ function parseResult(item) {
   return {
     discogs_id: item.master_id || item.id,
     discogs_type: item.master_id ? 'master' : 'release',
-    artist: hasArtist ? cleanName(credit) : 'Artiste inconnu',
+    artist: hasArtist ? cleanName(credit) : t('Artiste inconnu'),
     title: hasArtist ? rest.join(' - ') : item.title,
     year: item.year ? String(item.year) : null,
     cover_url: imageOf(item),
@@ -198,11 +199,11 @@ export function cleanDiscogsUsername(raw) {
 }
 
 function importError(e, kind) {
-  if (e.status === 404) return 'Aucun compte Discogs avec ce nom. Vérifie l’orthographe (c’est ton nom d’utilisateur, pas ton email).'
+  if (e.status === 404) return t('Aucun compte Discogs avec ce nom. Vérifie l’orthographe (c’est ton nom d’utilisateur, pas ton email).')
   if (e.status === 401 || e.status === 403) {
     return kind === 'owned'
-      ? 'Ta collection Discogs est privée. Rends-la publique dans Discogs › Paramètres › Confidentialité, importe, puis tu pourras la remettre en privé.'
-      : 'Ta wantlist Discogs est privée. Rends-la publique dans Discogs › Paramètres › Confidentialité, importe, puis tu pourras la remettre en privé.'
+      ? t('Ta collection Discogs est privée. Rends-la publique dans Discogs › Paramètres › Confidentialité, importe, puis tu pourras la remettre en privé.')
+      : t('Ta wantlist Discogs est privée. Rends-la publique dans Discogs › Paramètres › Confidentialité, importe, puis tu pourras la remettre en privé.')
   }
   return e.message
 }
@@ -217,8 +218,8 @@ function fromUserItem(row) {
   return {
     discogs_id: b.master_id || b.id,
     discogs_type: b.master_id ? 'master' : 'release',
-    artist: names.length ? names.join(', ') : 'Artiste inconnu',
-    title: b.title || 'Sans titre',
+    artist: names.length ? names.join(', ') : t('Artiste inconnu'),
+    title: b.title || t('Sans titre'),
     year: b.year ? String(b.year) : null,
     cover_url: cleanImage(b.cover_image) || cleanImage(b.thumb) || null,
     kind: kindOf({ format: descriptions }),
@@ -360,10 +361,10 @@ export function getDetails(item) {
         styles: d.styles || [],
         cover_url: primaryImage(d),
         barcode: (d.identifiers || []).find((i) => i.type === 'Barcode')?.value ?? null,
-        tracklist: (d.tracklist || []).map((t) => ({
-          position: t.position,
-          title: t.title,
-          duration: t.duration,
+        tracklist: (d.tracklist || []).map((tx) => ({
+          position: tx.position,
+          title: tx.title,
+          duration: tx.duration,
         })),
         videos: (d.videos || []).map((v) => ({ title: v.title, uri: v.uri })),
       }

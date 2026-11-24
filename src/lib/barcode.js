@@ -1,3 +1,4 @@
+import { t } from './i18n'
 // Lecture des codes-barres (EAN / UPC) au dos des pochettes.
 // On ouvre la caméra nous-mêmes (avec tout ce que l'iPhone demande, y compris
 // dans l'app installée sur l'écran d'accueil), puis on lit les images de la vidéo :
@@ -21,29 +22,29 @@ export const cameraAvailable = () => !!navigator.mediaDevices?.getUserMedia
 // Erreurs de caméra -> phrases claires
 export function cameraMessage(error) {
   if (!window.isSecureContext) {
-    return 'La caméra ne fonctionne que sur un site en https. Tu peux taper le code à la main en dessous.'
+    return t('La caméra ne fonctionne que sur un site en https. Tu peux taper le code à la main en dessous.')
   }
   const iphone = /iPhone|iPad|iPod/.test(navigator.userAgent)
   switch (error?.name) {
     case 'NotAllowedError':
     case 'SecurityError':
       return iphone
-        ? 'Accès à la caméra refusé. Sur iPhone : Réglages › Safari › Caméra › « Autoriser » ou « Demander », puis rouvre l’app. Tu peux aussi prendre le code en photo.'
-        : 'Accès à la caméra refusé. Autorise-le dans les réglages du navigateur (icône à côté de l’adresse), ou prends le code en photo.'
+        ? t('Accès à la caméra refusé. Sur iPhone : Réglages › Safari › Caméra › « Autoriser » ou « Demander », puis rouvre l’app. Tu peux aussi prendre le code en photo.')
+        : t('Accès à la caméra refusé. Autorise-le dans les réglages du navigateur (icône à côté de l’adresse), ou prends le code en photo.')
     case 'TimeoutError':
       return iphone
-        ? 'La caméra ne répond pas. Réessaie, ou prends le code en photo. (Si ça recommence : Réglages › Safari › Caméra › « Autoriser ».)'
-        : 'La caméra ne répond pas. Réessaie, ou prends le code en photo.'
+        ? t('La caméra ne répond pas. Réessaie, ou prends le code en photo. (Si ça recommence : Réglages › Safari › Caméra › « Autoriser ».)')
+        : t('La caméra ne répond pas. Réessaie, ou prends le code en photo.')
     case 'NoFramesError':
-      return 'La caméra s’ouvre mais l’image reste noire. Réessaie, ou prends le code en photo.'
+      return t('La caméra s’ouvre mais l’image reste noire. Réessaie, ou prends le code en photo.')
     case 'NotFoundError':
     case 'OverconstrainedError':
-      return 'Aucune caméra trouvée sur cet appareil. Tape le code à la main en dessous.'
+      return t('Aucune caméra trouvée sur cet appareil. Tape le code à la main en dessous.')
     case 'NotReadableError':
     case 'AbortError':
-      return 'La caméra est déjà utilisée par une autre application. Ferme-la et réessaie.'
+      return t('La caméra est déjà utilisée par une autre application. Ferme-la et réessaie.')
     default:
-      return 'Impossible d’ouvrir la caméra. Prends le code en photo ou tape-le à la main.'
+      return t('Impossible d’ouvrir la caméra. Prends le code en photo ou tape-le à la main.')
   }
 }
 
@@ -120,7 +121,7 @@ export async function openCamera(video) {
   const ask = (constraints) => {
     const request = navigator.mediaDevices.getUserMedia(constraints)
     return withTimeout(request, 10000).catch((e) => {
-      if (e?.name === 'TimeoutError') request.then((late) => late.getTracks().forEach((t) => t.stop())).catch(() => {})
+      if (e?.name === 'TimeoutError') request.then((late) => late.getTracks().forEach((tx) => tx.stop())).catch(() => {})
       throw e
     })
   }
@@ -140,7 +141,7 @@ export async function openCamera(video) {
   video.setAttribute('autoplay', '')
   video.srcObject = stream
   const stop = () => {
-    stream.getTracks().forEach((t) => t.stop())
+    stream.getTracks().forEach((tx) => tx.stop())
     if (video.srcObject === stream) video.srcObject = null
   }
   try {

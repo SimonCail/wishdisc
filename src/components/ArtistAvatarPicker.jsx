@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CloseIcon, SearchIcon, CheckIcon } from './Icons'
 import { CLASSICS, loadArtistImages, searchArtistImages } from '../lib/artistAvatars'
+import { t } from '../lib/i18n'
 
 const MAX_MINE = 12 // artistes de tes listes affichés
 const MAX_TILES = 24
@@ -78,7 +79,7 @@ export default function ArtistAvatarPicker({ myArtists, currentUrl, busy, error,
       if (!cancelled) setImages((prev) => ({ ...prev, [name]: value }))
     }, { isCancelled: () => cancelled }).then(({ failures }) => {
       if (!cancelled && failures > 0 && failures >= mine.length + classics.length) {
-        setLoadError('Impossible de joindre Discogs pour le moment. Réessaie dans un instant.')
+        setLoadError(t('Impossible de joindre Discogs pour le moment. Réessaie dans un instant.'))
       }
     })
     return () => {
@@ -133,22 +134,16 @@ export default function ArtistAvatarPicker({ myArtists, currentUrl, busy, error,
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Choisir un artiste"
+        aria-label={t('Choisir un artiste')}
         className="animate-pop flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-accent text-ink shadow-2xl shadow-black/60 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-5 sm:px-8 sm:pt-7">
           <div>
-            <h3 className="font-display text-4xl font-black uppercase leading-[0.85] sm:text-6xl">
-              Choisis ton
-              <br />
-              artiste.
-            </h3>
-            <p className="mt-3 max-w-md text-sm text-ink/75">
-              Il remplace ta photo partout : dans tes salons, sur tes disques, dans les invitations.
-            </p>
+            <h3 className="font-display text-4xl font-black uppercase leading-[0.85] sm:text-6xl">{t('Choisis ton')}<br />{t('artiste.')}</h3>
+            <p className="mt-3 max-w-md text-sm text-ink/75">{t('Il remplace ta photo partout : dans tes salons, sur tes disques, dans les invitations.')}</p>
           </div>
-          <button onClick={onCancel} disabled={busy} aria-label="Fermer" className="-mr-1 shrink-0 rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink">
+          <button onClick={onCancel} disabled={busy} aria-label={t('Fermer')} className="-mr-1 shrink-0 rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink">
             <CloseIcon width={22} height={22} />
           </button>
         </div>
@@ -159,8 +154,8 @@ export default function ArtistAvatarPicker({ myArtists, currentUrl, busy, error,
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Chercher un autre artiste…"
-              aria-label="Chercher un artiste"
+              placeholder={t('Chercher un autre artiste…')}
+              aria-label={t('Chercher un artiste')}
               autoComplete="off"
               className="w-full rounded-2xl border border-ink/25 bg-ink/10 py-3 pl-11 pr-4 text-ink outline-none transition placeholder:text-ink/55 focus:border-ink/60 focus:bg-ink/15"
             />
@@ -174,17 +169,17 @@ export default function ArtistAvatarPicker({ myArtists, currentUrl, busy, error,
           {loadError && <p className="mb-4 rounded-xl bg-ink/15 p-3 text-sm">{loadError}</p>}
 
           {results !== null ? (
-            <Section title={`Résultats pour « ${query.trim()} »`}>
+            <Section title={t('Résultats pour « {trim} »', { trim: query.trim() })}>
               {results.length === 0 && !searching ? (
-                <li className="col-span-full py-6 text-center text-sm text-ink/75">Aucun artiste avec photo pour cette recherche.</li>
+                <li className="col-span-full py-6 text-center text-sm text-ink/75">{t('Aucun artiste avec photo pour cette recherche.')}</li>
               ) : (
                 results.map((r) => <Tile key={r.url} item={r} selected={selected?.url === r.url} onSelect={setSelected} />)
               )}
             </Section>
           ) : (
             <>
-              {mineTiles.length > 0 && <Section title="Dans tes listes">{render(mineTiles)}</Section>}
-              <Section title="Classiques">{render(classicTiles)}</Section>
+              {mineTiles.length > 0 && <Section title={t('Dans tes listes')}>{render(mineTiles)}</Section>}
+              <Section title={t('Classiques')}>{render(classicTiles)}</Section>
             </>
           )}
         </div>
@@ -198,20 +193,18 @@ export default function ArtistAvatarPicker({ myArtists, currentUrl, busy, error,
                 <p className="min-w-0 truncate font-display text-lg font-black uppercase">{selected.label}</p>
               </>
             ) : (
-              <p className="text-sm text-ink/70">{currentUrl ? 'Choisis un autre artiste' : 'Choisis un artiste dans la grille'}</p>
+              <p className="text-sm text-ink/70">{currentUrl ? t('Choisis un autre artiste') : t('Choisis un artiste dans la grille')}</p>
             )}
           </div>
           {error && <p className="w-full rounded-xl bg-ink px-3 py-2 text-sm text-red-600">{error}</p>}
           <div className="flex w-full gap-2 sm:w-auto">
-            <button onClick={onCancel} disabled={busy} className="flex-1 rounded-full border border-ink/40 px-5 py-2.5 text-sm font-medium transition hover:bg-ink/10 sm:flex-none">
-              Annuler
-            </button>
+            <button onClick={onCancel} disabled={busy} className="flex-1 rounded-full border border-ink/40 px-5 py-2.5 text-sm font-medium transition hover:bg-ink/10 sm:flex-none">{t('Annuler')}</button>
             <button
               onClick={() => onConfirm(selected)}
               disabled={!selected || busy}
               className="flex-1 rounded-full bg-ink px-5 py-2.5 text-sm font-bold text-accent transition hover:bg-surface disabled:opacity-50 sm:flex-none"
             >
-              {busy ? '…' : selected ? `Choisir ${selected.label}` : 'Choisir'}
+              {busy ? '…' : selected ? `Choisir ${selected.label}` : t('Choisir')}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { StarIcon } from './Icons'
 import { itemKey } from '../lib/discogs'
 import { colorOf } from '../lib/edition'
 import { Swatch } from './EditionTags'
+import { t, tn } from '../lib/i18n'
 
 const SHELF_MAX = 12 // disques montrés par rangée, le reste avec « Tout voir »
 
@@ -26,9 +27,7 @@ function Mini({ it, mode, isNew, gift, onOpen }) {
         <span className="relative block overflow-hidden rounded-md shadow-[0_8px_18px_-10px_rgba(26,22,18,0.6)] ring-1 ring-black/10 transition duration-300 group-hover:-translate-y-0.5">
           <Cover url={it.cover_url} className="aspect-square w-full" />
           {isNew && (
-            <span className="keep-day absolute left-1.5 top-1.5 rounded-full bg-coral px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wide text-white shadow">
-              Nouveau
-            </span>
+            <span className="keep-day absolute left-1.5 top-1.5 rounded-full bg-coral px-1.5 py-px font-mono text-[9px] font-bold uppercase tracking-wide text-white shadow">{t('Nouveau')}</span>
           )}
           {gift && (
             <span
@@ -36,7 +35,7 @@ function Mini({ it, mode, isNew, gift, onOpen }) {
                 gift === 'mine' ? 'bg-accent text-ink' : 'bg-sun text-paper'
               }`}
             >
-              {gift === 'mine' ? 'Tu l’offres' : 'Réservé'}
+              {gift === 'mine' ? t('Tu l’offres') : t('Réservé')}
             </span>
           )}
         </span>
@@ -44,14 +43,14 @@ function Mini({ it, mode, isNew, gift, onOpen }) {
         <span className="block truncate text-[11px] text-muted">{it.artist}</span>
         <span className="mt-0.5 flex h-4 items-center gap-1">
           {mode === 'wish' && it.priority > 0 && (
-            <span className="flex text-accent" aria-label={`Envie ${it.priority} sur 3`}>
+            <span className="flex text-accent" aria-label={t('Envie {priority} sur 3', { priority: it.priority })}>
               {Array.from({ length: it.priority }).map((_, i) => (
                 <StarIcon key={i} filled width={12} height={12} />
               ))}
             </span>
           )}
           {color && color.key !== 'black' && <Swatch swatch={color.swatch ?? 'neutral'} size={9} />}
-          {it.edition?.signed && <span className="text-[10px] font-bold text-muted">Signé</span>}
+          {it.edition?.signed && <span className="text-[10px] font-bold text-muted">{t('Signé')}</span>}
         </span>
       </button>
     </li>
@@ -61,7 +60,6 @@ function Mini({ it, mode, isNew, gift, onOpen }) {
 // Salon : une rangée par personne, les plus voulus d'abord.
 // Les autres d'abord, ma rangée (« Toi ») en dernier.
 export default function RoomShelves({ items, members, meId, mode, isNew, giftOf, onOpen, onSeeAll }) {
-  const word = mode === 'wish' ? 'souhait' : 'disque'
   const others = members.filter((m) => m.id !== meId)
   const me = members.find((m) => m.id === meId)
   const rows = (me ? [...others, me] : others).map((m) => ({ m, list: shelfOf(items, m.id, mode) }))
@@ -73,14 +71,13 @@ export default function RoomShelves({ items, members, meId, mode, isNew, giftOf,
       {filled.map(({ m, list }) => {
         const fresh = list.filter((it) => isNew(it)).length
         return (
-          <section key={m.id} aria-label={m.id === meId ? 'Mes disques' : `Les disques de ${m.name}`}>
+          <section key={m.id} aria-label={m.id === meId ? t('Mes disques') : t('Les disques de {name}', { name: m.name })}>
             <div className="flex items-center gap-2.5">
               <Avatar member={m} size={30} ring={false} />
               <h3 className="min-w-0 flex-1 truncate text-base font-bold">
-                {m.id === meId ? 'Toi' : m.name}{' '}
+                {m.id === meId ? t('Toi') : m.name}{' '}
                 <span className="font-normal text-muted">
-                  · {list.length} {word}
-                  {list.length > 1 ? 's' : ''}
+                  · {mode === 'wish' ? tn(list.length, '{n} souhait', '{n} souhaits') : tn(list.length, '{n} disque', '{n} disques')}
                 </span>
                 {fresh > 0 && (
                   <span className="keep-day ml-2 rounded-full bg-coral px-2 py-0.5 align-middle font-mono text-[10px] font-bold text-white">
@@ -91,9 +88,7 @@ export default function RoomShelves({ items, members, meId, mode, isNew, giftOf,
               <button
                 onClick={() => onSeeAll(m.id)}
                 className="shrink-0 rounded-full px-2 py-1 text-sm font-bold text-accent transition hover:bg-raised"
-              >
-                Tout voir ›
-              </button>
+              >{t('Tout voir ›')}</button>
             </div>
             <ul className="no-scrollbar -mx-5 mt-3 flex snap-x scroll-px-5 gap-3.5 overflow-x-auto px-5 pb-1 sm:-mx-8 sm:scroll-px-8 sm:gap-5 sm:px-8 lg:-mx-14 lg:scroll-px-14 lg:px-14">
               {list.slice(0, SHELF_MAX).map((it) => (
@@ -112,9 +107,7 @@ export default function RoomShelves({ items, members, meId, mode, isNew, giftOf,
                     onClick={() => onSeeAll(m.id)}
                     className="flex aspect-square w-full flex-col items-center justify-center rounded-md border border-dashed border-line text-sm font-bold text-accent transition hover:border-accent"
                   >
-                    <span className="font-display text-2xl">+{list.length - SHELF_MAX}</span>
-                    Tout voir
-                  </button>
+                    <span className="font-display text-2xl">+{list.length - SHELF_MAX}</span>{t('Tout voir')}</button>
                 </li>
               )}
             </ul>
@@ -127,9 +120,11 @@ export default function RoomShelves({ items, members, meId, mode, isNew, giftOf,
           {empty.map(({ m }) => (
             <Avatar key={m.id} member={m} size={22} ring={false} />
           ))}
-          {empty.map(({ m }) => (m.id === meId ? 'Toi' : m.name)).join(', ')}{' '}
-          {empty.length > 1 ? 'n’ont' : 'n’a'} encore {mode === 'wish' ? 'rien souhaité' : 'aucun disque'} ici.
-        </p>
+          {(() => {
+            const names = empty.map(({ m }) => (m.id === meId ? t('Toi') : m.name)).join(', ')
+            if (mode === 'wish') return tn(empty.length, '{names} n’a encore rien souhaité ici.', '{names} n’ont encore rien souhaité ici.', { names })
+            return tn(empty.length, '{names} n’a encore aucun disque ici.', '{names} n’ont encore aucun disque ici.', { names })
+          })()}</p>
       )}
 
     </div>

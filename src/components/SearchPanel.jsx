@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Cover from './Cover'
 import { CloseIcon, PlusIcon, CheckIcon } from './Icons'
 import { searchVinyls, searchArtists, getArtistAlbums, itemKey } from '../lib/discogs'
+import { t } from '../lib/i18n'
 
 const DEBOUNCE_MS = 400
 const MIN_CHARS = 2
@@ -177,7 +178,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
           <input
             ref={inputRef}
             id={embedded ? 'add-search-sheet' : 'add-search'}
-            aria-label="Ajouter un disque"
+            aria-label={t('Ajouter un disque')}
             value={query}
             onChange={handleChange}
             onFocus={() => setOpen(true)}
@@ -186,8 +187,8 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
             disabled={offline}
             placeholder={
               offline
-                ? 'Recherche indisponible hors-ligne'
-                : 'Artiste, album…'
+                ? t('Recherche indisponible hors-ligne')
+                : t('Artiste, album…')
             }
             className="w-full rounded-2xl border border-line bg-surface py-4 pl-14 pr-14 text-base shadow-[0_10px_30px_-14px_rgba(27,36,32,0.35)] outline-none transition placeholder:text-muted/70 focus:border-accent focus:shadow-[0_14px_36px_-14px_color-mix(in_oklab,var(--color-accent)_50%,transparent)] focus:ring-4 focus:ring-accent/10"
           />
@@ -199,7 +200,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
                 <button
                   type="button"
                   onClick={clear}
-                  aria-label="Effacer la recherche"
+                  aria-label={t('Effacer la recherche')}
                   className="rounded-full p-1.5 text-muted transition hover:bg-raised hover:text-paper"
                 >
                   <CloseIcon width={18} height={18} />
@@ -213,12 +214,12 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
             type="button"
             onClick={onScan}
             disabled={offline}
-            aria-label="Scanner un code-barres"
-            title="Scanner le code-barres d'un vinyle"
+            aria-label={t('Scanner un code-barres')}
+            title={t('Scanner le code-barres d\'un vinyle')}
             className="flex shrink-0 items-center gap-2 rounded-2xl bg-accent px-4 font-bold text-ink shadow-[0_10px_30px_-14px_rgba(27,36,32,0.5)] transition hover:bg-accent-soft disabled:opacity-50 sm:px-5"
           >
             <BarcodeIcon />
-            <span className="hidden sm:inline">Scanner</span>
+            <span className="hidden sm:inline">{t('Scanner')}</span>
           </button>
         )}
       </div>
@@ -239,37 +240,29 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
                 <button
                   onClick={() => runSearch(query.trim())}
                   className="shrink-0 text-sm text-muted transition hover:text-paper"
-                >
-                  ← Retour
-                </button>
+                >{t('← Retour')}</button>
                 <h2 className="truncate font-display text-lg font-bold">
                   {selectedArtist.name}
                 </h2>
               </div>
             ) : (
-              <h2 className="font-display text-lg font-bold">Résultats</h2>
+              <h2 className="font-display text-lg font-bold">{t('Résultats')}</h2>
             )}
             {!embedded && (
               <button
                 onClick={clear}
                 className="shrink-0 text-sm text-muted transition hover:text-paper"
-              >
-                Fermer
-              </button>
+              >{t('Fermer')}</button>
             )}
           </div>
 
           {empty && (
-            <p className="py-8 text-center text-muted">
-              Rien trouvé pour « {query.trim()} ». Essaie une autre orthographe.
-            </p>
+            <p className="py-8 text-center text-muted">{t('Rien trouvé pour « {trim} ». Essaie une autre orthographe.', { trim: query.trim() })}</p>
           )}
 
           {artists.length > 0 && (
             <div className="mb-5">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-muted">
-                Artistes
-              </p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-muted">{t('Artistes')}</p>
               <div className="flex flex-wrap gap-2">
                 {artists.map((a) => (
                   <button
@@ -288,9 +281,7 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
           {results.length > 0 && (
             <>
               {!selectedArtist && (
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-muted">
-                  Albums
-                </p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-muted">{t('Albums')}</p>
               )}
               <ul
                 className={
@@ -322,23 +313,19 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
                         </p>
                         {status === 'wish' && (
                           <p className="mt-0.5 flex items-center gap-1 text-xs text-accent">
-                            <CheckIcon width={13} height={13} /> Dans mes souhaits
-                          </p>
+                            <CheckIcon width={13} height={13} />{' '}{t('Dans mes souhaits')}</p>
                         )}
                       </div>
                       <div className="w-full pl-[4.25rem] lg:w-auto lg:pl-0">
                         {status === 'owned' ? (
                           <span className="flex shrink-0 items-center gap-1 text-xs text-muted">
-                            <CheckIcon width={14} height={14} /> Dans ma collection
-                          </span>
+                            <CheckIcon width={14} height={14} />{' '}{t('Dans ma collection')}</span>
                         ) : status === 'wish' ? (
                           <button
                             onClick={() => withPending(item, () => onGotIt(item))}
                             disabled={busy}
                             className={`${smallBtn} shrink-0 border border-line font-medium hover:border-accent`}
-                          >
-                            Je l'ai
-                          </button>
+                          >{t('Je l\'ai')}</button>
                         ) : (
                           <div className="flex shrink-0 gap-1.5">
                             <button
@@ -346,15 +333,12 @@ export default function SearchPanel({ statusOf, onAdd, onGotIt, onError, onScan,
                               disabled={busy}
                               className={`${smallBtn} flex items-center gap-1 bg-accent font-bold text-ink hover:bg-accent-soft`}
                             >
-                              <PlusIcon width={13} height={13} /> Souhait
-                            </button>
+                              <PlusIcon width={13} height={13} />{' '}{t('Souhait')}</button>
                             <button
                               onClick={() => withPending(item, () => onAdd(item, 'owned'))}
                               disabled={busy}
                               className={`${smallBtn} border border-line font-medium hover:border-accent`}
-                            >
-                              Je l'ai
-                            </button>
+                            >{t('Je l\'ai')}</button>
                           </div>
                         )}
                       </div>

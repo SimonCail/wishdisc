@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { t } from './i18n'
 
 const BUCKET = 'avatars'
 const SIZE = 512 // côté de la photo finale, en pixels
@@ -36,17 +37,17 @@ const MAX_EDIT = 2048 // côté max de la photo pendant le recadrage
 // Photo de la galerie -> image prête à recadrer (bien orientée, taille raisonnable).
 // Renvoie { canvas, url, width, height } ; url sert à l'affichage dans l'éditeur.
 export async function loadPhoto(file) {
-  if (!file) throw new Error('Aucune photo choisie.')
+  if (!file) throw new Error(t('Aucune photo choisie.'))
   if (file.type && !file.type.startsWith('image/')) {
-    throw new Error("Ce fichier n'est pas une image.")
+    throw new Error(t('Ce fichier n\'est pas une image.'))
   }
-  if (file.size > MAX_INPUT) throw new Error('Photo trop lourde (30 Mo maximum).')
+  if (file.size > MAX_INPUT) throw new Error(t('Photo trop lourde (30 Mo maximum).'))
 
   let source
   try {
     source = await decode(file)
   } catch {
-    throw new Error('Format de photo non pris en charge. Essaie une photo JPEG ou PNG.')
+    throw new Error(t('Format de photo non pris en charge. Essaie une photo JPEG ou PNG.'))
   }
 
   const ratio = Math.min(1, MAX_EDIT / Math.max(source.width, source.height))
@@ -82,24 +83,24 @@ export async function exportAvatar(photo, view) {
   let blob = await toBlob(out, 'image/webp', 0.86)
   // Certains navigateurs ne savent pas produire de WebP : on se rabat sur JPEG
   if (!blob || blob.type !== 'image/webp') blob = await toBlob(out, 'image/jpeg', 0.88)
-  if (!blob) throw new Error('Impossible de préparer la photo.')
+  if (!blob) throw new Error(t('Impossible de préparer la photo.'))
   return blob
 }
 
 // Erreurs du stockage Supabase -> phrases claires (le détail reste dans la console)
 function uploadMessage(error) {
-  console.error('Envoi de la photo :', error)
+  console.error(t('Envoi de la photo :'), error)
   const msg = `${error?.message || ''} ${error?.error || ''}`.toLowerCase()
   if (msg.includes('bucket not found')) {
-    return 'Le stockage des photos n’est pas encore prêt : active Storage dans Supabase puis relance le script 3-profil-et-photos.sql.'
+    return t('Le stockage des photos n’est pas encore prêt : active Storage dans Supabase puis relance le script 3-profil-et-photos.sql.')
   }
   if (msg.includes('row-level security') || msg.includes('unauthorized') || msg.includes('403')) {
-    return 'Le stockage a refusé la photo (règles d’accès manquantes) : relance le script 3-profil-et-photos.sql.'
+    return t('Le stockage a refusé la photo (règles d’accès manquantes) : relance le script 3-profil-et-photos.sql.')
   }
-  if (msg.includes('mime') || msg.includes('not supported')) return 'Format de photo refusé par le stockage.'
-  if (msg.includes('size') || msg.includes('too large')) return 'Photo trop lourde pour le stockage.'
-  if (!navigator.onLine) return 'Pas de connexion internet.'
-  return `L'envoi de la photo a échoué (${error?.message || 'erreur inconnue'}).`
+  if (msg.includes('mime') || msg.includes('not supported')) return t('Format de photo refusé par le stockage.')
+  if (msg.includes('size') || msg.includes('too large')) return t('Photo trop lourde pour le stockage.')
+  if (!navigator.onLine) return t('Pas de connexion internet.')
+  return t('L\'envoi de la photo a échoué ({v1}).', { v1: error?.message || t('erreur inconnue') })
 }
 
 // Envoie la photo dans le dossier de la personne, puis supprime les anciennes.

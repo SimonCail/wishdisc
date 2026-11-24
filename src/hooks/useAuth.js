@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { PROFILE_KEY, clearUserCache, readJSON, writeJSON } from '../lib/cache'
 import { uploadAvatar, removeAvatars } from '../lib/avatar'
 import { pseudoError } from '../lib/validation'
+import { t } from '../lib/i18n'
 
 // Colonnes du profil, de la plus complète à la plus courte : tant qu'un script
 // SQL (4, 5…) n'est pas lancé, on se rabat sur ce qui existe déjà.
@@ -20,33 +21,33 @@ function authMessage(error) {
   if (!error) return null
   switch (error.code) {
     case 'invalid_credentials':
-      return 'Email ou mot de passe incorrect.'
+      return t('Email ou mot de passe incorrect.')
     case 'email_not_confirmed':
-      return 'Ton compte n’est pas encore activé : tape le code reçu par mail.'
+      return t('Ton compte n’est pas encore activé : tape le code reçu par mail.')
     case 'user_already_exists':
     case 'email_exists':
-      return 'Un compte existe déjà avec cet email. Connecte-toi plutôt.'
+      return t('Un compte existe déjà avec cet email. Connecte-toi plutôt.')
     case 'weak_password':
-      return 'Mot de passe trop faible : 8 caractères minimum, avec une majuscule, une minuscule, un chiffre et un caractère spécial.'
+      return t('Mot de passe trop faible : 8 caractères minimum, avec une majuscule, une minuscule, un chiffre et un caractère spécial.')
     case 'email_address_invalid':
     case 'validation_failed':
-      return 'Cet email ne semble pas valide.'
+      return t('Cet email ne semble pas valide.')
     case 'same_password':
-      return 'Choisis un mot de passe différent de l’ancien.'
+      return t('Choisis un mot de passe différent de l’ancien.')
     case 'over_email_send_rate_limit':
-      return 'Trop d’emails envoyés, réessaie dans quelques minutes.'
+      return t('Trop d’emails envoyés, réessaie dans quelques minutes.')
     case 'otp_expired':
-      return 'Ce code est incorrect ou a expiré. Vérifie-le, ou demande-en un nouveau.'
+      return t('Ce code est incorrect ou a expiré. Vérifie-le, ou demande-en un nouveau.')
     case 'otp_disabled':
-      return 'La connexion par code n’est pas activée.'
+      return t('La connexion par code n’est pas activée.')
   }
-  if (error.status === 429) return "Trop d'essais, patiente quelques minutes."
-  if (!navigator.onLine) return 'Pas de connexion internet.'
-  return 'Ça n’a pas marché, réessaie.'
+  if (error.status === 429) return t('Trop d\'essais, patiente quelques minutes.')
+  if (!navigator.onLine) return t('Pas de connexion internet.')
+  return t('Ça n’a pas marché, réessaie.')
 }
 
 // --- Pseudos : un pseudo = une seule personne (script 11-pseudo-unique.sql) ---
-const pseudoTaken = (pseudo) => `Le pseudo « ${pseudo} » est déjà pris. Choisis-en un autre.`
+const pseudoTaken = (pseudo) => t('Le pseudo « {pseudo} » est déjà pris. Choisis-en un autre.', { pseudo })
 const isPseudoInvalid = (error) => /pseudo_invalid|pseudo_reserved/i.test(`${error?.message || ''}`)
 const isPseudoError = (error) =>
   /pseudo_taken|profiles_name_unique|duplicate key|database error saving new user/i.test(
@@ -128,7 +129,7 @@ export function useAuth() {
     if (error) {
       // La base refuse un pseudo pris entre-temps (Supabase dit juste « Database error »)
       if (isPseudoError(error) && (await checkPseudo(pseudo)) === 'taken') return { error: pseudoTaken(pseudo) }
-      if (isPseudoInvalid(error)) return { error: 'Ce pseudo n’est pas valide.' }
+      if (isPseudoInvalid(error)) return { error: t('Ce pseudo n’est pas valide.') }
       return { error: authMessage(error) }
     }
     // Supabase renvoie un utilisateur sans identités si l'email est déjà pris
@@ -149,7 +150,7 @@ export function useAuth() {
   // type : 'signup' (activer le compte) ou 'recovery' (mot de passe oublié)
   async function verifyCode(email, code, type) {
     const token = (code ?? '').replace(/\D/g, '')
-    if (token.length < 6) return 'Le code contient au moins 6 chiffres.'
+    if (token.length < 6) return t('Le code contient au moins 6 chiffres.')
     const { error } = await supabase.auth.verifyOtp({ email, token, type })
     if (error) return authMessage(error.code ? error : { ...error, code: 'otp_expired' })
     if (type === 'recovery') setRecovering(true) // on demande ensuite le nouveau mot de passe
@@ -209,12 +210,12 @@ export function useAuth() {
       .single()
     if (missingColumn(error)) {
       return 'turntable' in patch
-        ? 'Lance d’abord le script 5-platine.sql dans Supabase.'
-        : 'Lance d’abord le script 4-avatars-artistes.sql dans Supabase.'
+        ? t('Lance d’abord le script 5-platine.sql dans Supabase.')
+        : t('Lance d’abord le script 4-avatars-artistes.sql dans Supabase.')
     }
-    if (error && isPseudoInvalid(error)) return pseudoError(patch.name) || 'Ce pseudo n’est pas valide.'
+    if (error && isPseudoInvalid(error)) return pseudoError(patch.name) || t('Ce pseudo n’est pas valide.')
     if (error && isPseudoError(error)) return pseudoTaken(patch.name ?? '')
-    if (error) return navigator.onLine ? 'Enregistrement impossible, réessaie.' : 'Pas de connexion internet.'
+    if (error) return navigator.onLine ? t('Enregistrement impossible, réessaie.') : t('Pas de connexion internet.')
     saveProfileLocally(data)
     return null
   }
@@ -251,14 +252,14 @@ export function useAuth() {
   // Renvoie { error, info }
   async function changeEmail(email) {
     if (email.trim().toLowerCase() === user?.email?.toLowerCase()) {
-      return { error: 'C’est déjà ton email.' }
+      return { error: t('C’est déjà ton email.') }
     }
     const { error } = await supabase.auth.updateUser(
       { email: email.trim() },
       { emailRedirectTo: window.location.origin }
     )
     if (error) return { error: authMessage(error) }
-    return { info: `Touche le bouton du mail envoyé à ${email.trim()} pour confirmer le changement.` }
+    return { info: t('Touche le bouton du mail envoyé à {trim} pour confirmer le changement.', { trim: email.trim() }) }
   }
 
   // On vérifie d'abord le mot de passe actuel
@@ -266,7 +267,7 @@ export function useAuth() {
     const check = await supabase.auth.signInWithPassword({ email: user.email, password: current })
     if (check.error) {
       return check.error.code === 'invalid_credentials'
-        ? 'Mot de passe actuel incorrect.'
+        ? t('Mot de passe actuel incorrect.')
         : authMessage(check.error)
     }
     const { error } = await supabase.auth.updateUser({ password: next })
@@ -277,7 +278,7 @@ export function useAuth() {
   async function deleteAccount() {
     await removeAvatars(userId).catch(() => {})
     const { error } = await supabase.rpc('delete_my_account')
-    if (error) return navigator.onLine ? 'Suppression impossible, réessaie.' : 'Pas de connexion internet.'
+    if (error) return navigator.onLine ? t('Suppression impossible, réessaie.') : t('Pas de connexion internet.')
     await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
     clearUserCache()
     setProfile(null)
@@ -290,7 +291,7 @@ export function useAuth() {
     if (profile?.id === user.id) return profile
     return {
       id: user.id,
-      name: user.user_metadata?.name || user.email?.split('@')[0] || 'Moi',
+      name: user.user_metadata?.name || user.email?.split('@')[0] || t('Moi'),
       color: '#ec5b3e',
     }
   }, [user, profile])

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { t } from '../lib/i18n'
 
 // Nombre de disques par page : toujours des rangées complètes selon le
 // nombre de colonnes de la grille (2 sur mobile, 3, 4 puis 5 sur grand écran)
@@ -55,12 +56,12 @@ export default function Pagination({ page, pageCount, total, pageSize, onPage })
     'flex h-9 min-w-8 items-center justify-center rounded-full px-1.5 font-mono sm:h-10 sm:min-w-10 sm:px-3 text-sm transition disabled:pointer-events-none disabled:opacity-30'
 
   return (
-    <nav aria-label="Pages" className="mt-14 flex flex-col items-center gap-3">
+    <nav aria-label={t('Pages')} className="mt-14 flex flex-col items-center gap-3">
       <div className="flex flex-wrap items-center justify-center gap-0.5 sm:gap-1">
         <button
           onClick={() => onPage(page - 1)}
           disabled={page === 1}
-          aria-label="Page précédente"
+          aria-label={t('Page précédente')}
           className={`${btn} text-paper hover:bg-raised`}
         >
           <Arrow dir="prev" />
@@ -74,7 +75,7 @@ export default function Pagination({ page, pageCount, total, pageSize, onPage })
             <button
               key={n}
               onClick={() => onPage(n)}
-              aria-label={`Page ${n}`}
+              aria-label={t('Page {n}', { n })}
               aria-current={n === page ? 'page' : undefined}
               className={`${btn} ${
                 n === page ? 'bg-accent font-bold text-ink' : 'text-paper hover:bg-raised'
@@ -87,15 +88,13 @@ export default function Pagination({ page, pageCount, total, pageSize, onPage })
         <button
           onClick={() => onPage(page + 1)}
           disabled={page === pageCount}
-          aria-label="Page suivante"
+          aria-label={t('Page suivante')}
           className={`${btn} text-paper hover:bg-raised`}
         >
           <Arrow dir="next" />
         </button>
       </div>
-      <p className="font-mono text-xs text-muted">
-        {from}–{to} sur {total}
-      </p>
+      <p className="font-mono text-xs text-muted">{t('{from}–{to} sur {total}', { from, to, total })}</p>
     </nav>
   )
 }

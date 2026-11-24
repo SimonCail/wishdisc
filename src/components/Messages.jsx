@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
 import { CheckIcon, CloseIcon, PlusIcon, SearchIcon, TrashIcon } from './Icons'
 import { RecordIcon } from './Layout'
+import { t, tn, locale } from '../lib/i18n'
 
 // --- Dates ---
 const sameDay = (a, b) => a.toDateString() === b.toDateString()
@@ -9,21 +10,19 @@ function dayLabel(d) {
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(today.getDate() - 1)
-  if (sameDay(d, today)) return 'Aujourd’hui'
-  if (sameDay(d, yesterday)) return 'Hier'
-  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  if (sameDay(d, today)) return t('Aujourd’hui')
+  if (sameDay(d, yesterday)) return t('Hier')
+  return d.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' })
 }
-const timeLabel = (d) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+const timeLabel = (d) => d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
 function shortWhen(iso) {
   const d = new Date(iso)
   const today = new Date()
   if (sameDay(d, today)) return timeLabel(d)
   const diff = (today - d) / 86400000
-  if (diff < 6) return d.toLocaleDateString('fr-FR', { weekday: 'short' })
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  if (diff < 6) return d.toLocaleDateString(locale(), { weekday: 'short' })
+  return d.toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
 }
-const preview = (m, meId) =>
-  `${m.sender === meId ? 'Toi : ' : ''}${m.vinyl ? `disque partagé, ${m.vinyl.title}` : m.body}`
 
 const SendIcon = (p) => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"
@@ -62,7 +61,7 @@ function CoverStrip({ covers, size = 28 }) {
 // coversOf(id) : pochettes des derniers souhaits de la personne
 function ConversationList({ conversations, friends, personOf, meId, activeId, coversOf, onOpen, onFindFriends }) {
   const [q, setQ] = useState('')
-  const norm = (t = '') => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const norm = (tx = '') => tx.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const match = (p) => !q.trim() || norm(p.name).includes(norm(q.trim()))
   const withConv = new Set(conversations.map((c) => c.otherId))
   const convs = conversations
@@ -75,10 +74,10 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="px-5 pb-4 pt-6 lg:px-5 lg:pt-5">
         <div className="flex items-end justify-between gap-3">
-          <h1 className="font-display text-5xl font-black uppercase leading-[0.85] lg:text-4xl">Messages</h1>
+          <h1 className="font-display text-5xl font-black uppercase leading-[0.85] lg:text-4xl">{t('Messages')}</h1>
           {unreadTotal > 0 && (
             <span className="mb-1 text-sm font-medium text-accent">
-              {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}
+              {tn(unreadTotal, '{n} non lu', '{n} non lus')}
             </span>
           )}
         </div>
@@ -88,8 +87,8 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Chercher un ami"
-              aria-label="Chercher dans les conversations"
+              placeholder={t('Chercher un ami')}
+              aria-label={t('Chercher dans les conversations')}
               className="w-full rounded-full border border-line bg-ink py-2.5 pl-10 pr-4 text-sm outline-none transition placeholder:text-muted/70 focus:border-accent"
             />
           </label>
@@ -129,8 +128,8 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
                         {v?.cover_url && <img src={v.cover_url} alt="" className="h-5 w-5 shrink-0 rounded-[3px] object-cover" />}
                         <span className={`truncate text-sm ${unread ? 'font-medium text-paper' : 'text-muted'}`}>
                           {v
-                            ? `${c.last.sender === meId ? 'Tu as partagé' : 'A partagé'} « ${v.title} »`
-                            : `${c.last.sender === meId ? 'Toi : ' : ''}${c.last.body}`}
+                            ? c.last.sender === meId ? t('Tu as partagé « {title} »', { title: v.title }) : t('A partagé « {title} »', { title: v.title })
+                            : `${c.last.sender === meId ? t('Toi :') + ' ' : ''}${c.last.body}`}
                         </span>
                         {c.unread > 1 && (
                           <span className="keep-day ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-coral px-1.5 font-mono text-[10px] font-bold text-white">
@@ -149,7 +148,7 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
         {others.length > 0 && (
           <>
             <p className="px-3 pb-2 pt-5 text-sm font-medium text-muted">
-              {convs.length ? 'Tes autres amis' : 'Commence une conversation'}
+              {convs.length ? t('Tes autres amis') : t('Commence une conversation')}
             </p>
             <ul className="space-y-0.5">
               {others.map((f) => (
@@ -164,7 +163,7 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
                     <Avatar member={f} size={52} ring={false} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{f.name}</span>
-                      <span className="block truncate text-sm text-muted">Écris-lui un premier message</span>
+                      <span className="block truncate text-sm text-muted">{t('Écris-lui un premier message')}</span>
                     </span>
                     <CoverStrip covers={coversOf(f.id)} size={26} />
                   </button>
@@ -180,20 +179,16 @@ function ConversationList({ conversations, friends, personOf, meId, activeId, co
               <span className="absolute left-0 top-2 h-16 w-16 rotate-[-8deg] rounded-md bg-raised shadow" />
               <span className="vinyl-disc absolute right-0 top-0 h-20 w-20 animate-slow-spin" style={{ '--disc-label': '#f1c04e' }} />
             </div>
-            <p className="mt-5 font-display text-2xl font-black uppercase leading-none">Personne à qui écrire</p>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-muted">
-              Les messages se font entre amis. Ajoute quelqu’un pour parler disques et cadeaux.
-            </p>
+            <p className="mt-5 font-display text-2xl font-black uppercase leading-none">{t('Personne à qui écrire')}</p>
+            <p className="mx-auto mt-2 max-w-xs text-sm text-muted">{t('Les messages se font entre amis. Ajoute quelqu’un pour parler disques et cadeaux.')}</p>
             <button
               onClick={onFindFriends}
               className="mt-5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-ink transition hover:bg-accent-soft"
-            >
-              Trouver des amis
-            </button>
+            >{t('Trouver des amis')}</button>
           </div>
         )}
         {(friends.length > 0 || conversations.length > 0) && convs.length === 0 && others.length === 0 && (
-          <p className="px-3 py-6 text-center text-sm text-muted">Personne ne s’appelle comme ça.</p>
+          <p className="px-3 py-6 text-center text-sm text-muted">{t('Personne ne s’appelle comme ça.')}</p>
         )}
       </div>
     </div>
@@ -213,10 +208,8 @@ function EmptyPane({ friends, coversOf, onOpen }) {
           style={{ '--disc-label': 'var(--user-accent-bg, #1d4a3a)' }}
         />
       </div>
-      <p className="mt-8 font-display text-3xl font-black uppercase leading-none">Choisis une conversation</p>
-      <p className="mt-2 max-w-sm text-sm text-muted">
-        Parle de vos trouvailles, demande une idée de cadeau, ou envoie un disque avec le bouton vinyle.
-      </p>
+      <p className="mt-8 font-display text-3xl font-black uppercase leading-none">{t('Choisis une conversation')}</p>
+      <p className="mt-2 max-w-sm text-sm text-muted">{t('Parle de vos trouvailles, demande une idée de cadeau, ou envoie un disque avec le bouton vinyle.')}</p>
       {suggestions.length > 0 && (
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           {suggestions.map((f) => (
@@ -225,9 +218,7 @@ function EmptyPane({ friends, coversOf, onOpen }) {
               onClick={() => onOpen(f.id)}
               className="flex items-center gap-3 rounded-full border border-line bg-ink py-1.5 pl-1.5 pr-4 text-sm font-medium transition hover:border-accent"
             >
-              <Avatar member={f} size={32} ring={false} />
-              Écrire à {f.name}
-              <CoverStrip covers={coversOf(f.id)} size={20} />
+              <Avatar member={f} size={32} ring={false} />{t('Écrire à {name}', { name: f.name })}<CoverStrip covers={coversOf(f.id)} size={20} />
             </button>
           ))}
         </div>
@@ -245,7 +236,7 @@ export function Messenger({
   if (missing) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-10">
-        <p className="rounded-2xl bg-raised px-4 py-3 text-sm">Lance d’abord le script 10-messages.sql dans Supabase.</p>
+        <p className="rounded-2xl bg-raised px-4 py-3 text-sm">{t('Lance d’abord le script 10-messages.sql dans Supabase.')}</p>
       </div>
     )
   }
@@ -276,7 +267,7 @@ export function Messenger({
         {open && activeFriend ? (
           <ChatThread key={activeId} friend={activeFriend} coversOf={coversOf} {...threadProps} />
         ) : open ? (
-          <p className="m-auto text-muted">Chargement…</p>
+          <p className="m-auto text-muted">{t('Chargement…')}</p>
         ) : (
           <EmptyPane friends={friends} coversOf={coversOf} onOpen={onOpen} />
         )}
@@ -312,7 +303,7 @@ function VinylMessage({ vinyl, mine, status, onAdd }) {
         <div className="mt-3">
           {status ? (
             <span className="flex items-center gap-1 text-xs text-muted">
-              <CheckIcon width={14} height={14} /> {status === 'owned' ? 'Dans ta collection' : 'Dans tes souhaits'}
+              <CheckIcon width={14} height={14} /> {status === 'owned' ? t('Dans ta collection') : t('Dans tes souhaits')}
             </span>
           ) : (
             <button
@@ -324,7 +315,7 @@ function VinylMessage({ vinyl, mine, status, onAdd }) {
               disabled={busy}
               className="flex items-center gap-1 rounded-full bg-accent px-3.5 py-1.5 text-xs font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
             >
-              <PlusIcon width={13} height={13} /> {busy ? 'Ajout…' : 'Ajouter à mes souhaits'}
+              <PlusIcon width={13} height={13} /> {busy ? t('Ajout…') : t('Ajouter à mes souhaits')}
             </button>
           )}
         </div>
@@ -343,7 +334,7 @@ function DiscPicker({ vinyls, onPick, onClose }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
-  const norm = (t = '') => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const norm = (tx = '') => tx.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const list = vinyls.filter((v) => !q.trim() || norm(`${v.title} ${v.artist}`).includes(norm(q.trim()))).slice(0, 80)
 
   return (
@@ -354,16 +345,16 @@ function DiscPicker({ vinyls, onPick, onClose }) {
           ref={inputRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Partager un de tes disques…"
-          aria-label="Chercher dans tes disques"
+          placeholder={t('Partager un de tes disques…')}
+          aria-label={t('Chercher dans tes disques')}
           className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted/70"
         />
-        <button onClick={onClose} aria-label="Fermer" className="rounded-full p-1.5 text-muted hover:bg-raised hover:text-paper">
+        <button onClick={onClose} aria-label={t('Fermer')} className="rounded-full p-1.5 text-muted hover:bg-raised hover:text-paper">
           <CloseIcon width={16} height={16} />
         </button>
       </div>
       <ul className="nice-scroll max-h-72 overflow-y-auto p-1.5">
-        {list.length === 0 && <li className="px-3 py-6 text-center text-sm text-muted">Aucun disque trouvé.</li>}
+        {list.length === 0 && <li className="px-3 py-6 text-center text-sm text-muted">{t('Aucun disque trouvé.')}</li>}
         {list.map((v) => (
           <li key={`${v.discogs_type}:${v.discogs_id}`}>
             <button
@@ -379,7 +370,7 @@ function DiscPicker({ vinyls, onPick, onClose }) {
                 <span className="block truncate text-sm font-medium">{v.title}</span>
                 <span className="block truncate text-xs text-muted">{v.artist}</span>
               </span>
-              <span className="shrink-0 text-[11px] text-muted">{v.status === 'owned' ? 'Collection' : 'Souhait'}</span>
+              <span className="shrink-0 text-[11px] text-muted">{v.status === 'owned' ? t('Collection') : t('Souhait')}</span>
             </button>
           </li>
         ))}
@@ -390,7 +381,7 @@ function DiscPicker({ vinyls, onPick, onClose }) {
 
 // ---------------------------------------------------------------------------
 // Une conversation
-const STARTERS = ['Salut ! Tu écoutes quoi en ce moment ?', 'J’ai vu un disque qui va te plaire', 'Une idée de cadeau pour toi ?']
+const STARTERS = [t('Salut ! Tu écoutes quoi en ce moment ?'), t('J’ai vu un disque qui va te plaire'), t('Une idée de cadeau pour toi ?')]
 
 export function ChatThread({
   friend, isFriend, messages, meId, myVinyls, statusOf, coversOf,
@@ -464,35 +455,31 @@ export function ChatThread({
     <div className="flex h-full min-h-0 flex-1 flex-col">
       {/* En-tête de la conversation */}
       <div className="flex shrink-0 items-center gap-3 border-b border-line bg-ink px-3 py-2.5 lg:bg-surface lg:px-5 lg:py-3.5">
-        <button onClick={onBack} aria-label="Retour aux messages" className="rounded-full p-2 text-paper transition hover:bg-raised lg:hidden">
+        <button onClick={onBack} aria-label={t('Retour aux messages')} className="rounded-full p-2 text-paper transition hover:bg-raised lg:hidden">
           <BackIcon />
         </button>
         <Avatar member={friend} size={44} ring={false} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-display text-2xl font-black uppercase leading-none">{friend.name}</span>
           {canSee ? (
-            <button onClick={() => onOpenFriend(friend.id)} className="mt-0.5 text-xs text-muted underline-offset-4 hover:text-paper hover:underline">
-              Voir ses disques
-            </button>
+            <button onClick={() => onOpenFriend(friend.id)} className="mt-0.5 text-xs text-muted underline-offset-4 hover:text-paper hover:underline">{t('Voir ses disques')}</button>
           ) : gone ? (
-            <span className="mt-0.5 block text-xs text-muted">Ce compte n’existe plus</span>
+            <span className="mt-0.5 block text-xs text-muted">{t('Ce compte n’existe plus')}</span>
           ) : null}
         </span>
         {canSee && covers?.length > 0 && (
           <button
             onClick={() => onOpenFriend(friend.id)}
-            title={`Les derniers souhaits de ${friend.name}`}
+            title={t('Les derniers souhaits de {name}', { name: friend.name })}
             className="hidden items-center gap-3 rounded-full border border-line py-1.5 pl-2 pr-4 text-xs font-medium text-muted transition hover:border-accent hover:text-paper sm:flex"
           >
-            <CoverStrip covers={covers} size={24} />
-            Ses souhaits
-          </button>
+            <CoverStrip covers={covers} size={24} />{t('Ses souhaits')}</button>
         )}
         {messages.length > 0 && onClear && (
           <button
             onClick={() => onClear(friend)}
-            aria-label="Supprimer la conversation"
-            title="Supprimer la conversation"
+            aria-label={t('Supprimer la conversation')}
+            title={t('Supprimer la conversation')}
             className="shrink-0 rounded-full p-2.5 text-muted transition hover:bg-raised hover:text-paper"
           >
             <TrashIcon width={18} height={18} />
@@ -510,28 +497,26 @@ export function ChatThread({
                 <Avatar member={friend} size={88} ring={false} className="relative ring-4 ring-surface" />
               </div>
               <p className="mt-6 font-display text-3xl font-black uppercase leading-none">
-                {gone ? 'Aucun message' : `Dis bonjour à ${friend.name}`}
+                {gone ? t('Aucun message') : t('Dis bonjour à {name}', { name: friend.name })}
               </p>
               {covers?.length > 0 ? (
                 <button onClick={() => onOpenFriend(friend.id)} className="mt-4 flex flex-col items-center gap-2 text-sm text-muted hover:text-paper sm:flex-row sm:gap-3">
-                  <CoverStrip covers={covers} size={30} />
-                  Ses derniers souhaits : une idée de cadeau ?
-                </button>
+                  <CoverStrip covers={covers} size={30} />{t('Ses derniers souhaits : une idée de cadeau ?')}</button>
               ) : canWrite ? (
-                <p className="mt-2 max-w-xs text-sm text-muted">Ou envoie-lui un de tes disques avec le bouton vinyle.</p>
+                <p className="mt-2 max-w-xs text-sm text-muted">{t('Ou envoie-lui un de tes disques avec le bouton vinyle.')}</p>
               ) : null}
               {canWrite && (
                 <div className="mt-6 flex flex-wrap justify-center gap-2">
-                  {STARTERS.map((t) => (
+                  {STARTERS.map((tx) => (
                     <button
-                      key={t}
+                      key={tx}
                       onClick={() => {
-                        setText(t)
+                        setText(tx)
                         textRef.current?.focus()
                       }}
                       className="rounded-full border border-line bg-surface px-4 py-2 text-sm transition hover:border-accent"
                     >
-                      {t}
+                      {tx}
                     </button>
                   ))}
                 </div>
@@ -576,14 +561,12 @@ export function ChatThread({
                         </p>
                       )}
                       {m.failed ? (
-                        <button onClick={() => onRetry(m)} className="mt-1 text-xs font-medium text-red-600 underline-offset-4 hover:underline">
-                          Non envoyé · Réessayer
-                        </button>
+                        <button onClick={() => onRetry(m)} className="mt-1 text-xs font-medium text-red-600 underline-offset-4 hover:underline">{t('Non envoyé · Réessayer')}</button>
                       ) : (
                         lastOfRun && (
                           <span className="mt-1 px-1 text-[11px] text-muted">
-                            {m.pending ? 'Envoi…' : timeLabel(new Date(m.created_at))}
-                            {mine && m.id === lastMine?.id && m.read_at && ' · Vu'}
+                            {m.pending ? t('Envoi…') : timeLabel(new Date(m.created_at))}
+                            {mine && m.id === lastMine?.id && m.read_at && ` · ${t('Vu')}`}
                           </span>
                         )
                       )}
@@ -599,9 +582,9 @@ export function ChatThread({
       {/* Écrire */}
       <div className="shrink-0 border-t border-line bg-ink px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 lg:bg-surface lg:px-5 lg:pb-4">
         {gone ? (
-          <p className="py-2 text-center text-sm text-muted">Ce compte a été supprimé : tu ne peux plus lui écrire.</p>
+          <p className="py-2 text-center text-sm text-muted">{t('Ce compte a été supprimé : tu ne peux plus lui écrire.')}</p>
         ) : !isFriend ? (
-          <p className="py-2 text-center text-sm text-muted">Vous n’êtes plus amis : tu ne peux plus lui écrire.</p>
+          <p className="py-2 text-center text-sm text-muted">{t('Vous n’êtes plus amis : tu ne peux plus lui écrire.')}</p>
         ) : (
           <form
             onSubmit={(e) => {
@@ -624,8 +607,8 @@ export function ChatThread({
               type="button"
               onClick={() => setPicker((o) => !o)}
               disabled={!canWrite || myVinyls.length === 0}
-              aria-label="Partager un de mes disques"
-              title={myVinyls.length ? 'Partager un de mes disques' : 'Ajoute des disques à ta liste pour les partager'}
+              aria-label={t('Partager un de mes disques')}
+              title={myVinyls.length ? t('Partager un de mes disques') : t('Ajoute des disques à ta liste pour les partager')}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40 ${
                 picker ? 'border-accent bg-accent text-ink' : 'border-line text-paper hover:border-accent'
               }`}
@@ -640,13 +623,13 @@ export function ChatThread({
               onKeyDown={onKeyDown}
               maxLength={2000}
               disabled={!canWrite}
-              placeholder={offline ? 'Hors-ligne' : `Écrire à ${friend.name}…`}
-              aria-label="Message"
+              placeholder={offline ? 'Hors-ligne' : t('Écrire à {name}…', { name: friend.name })}
+              aria-label={t('Message')}
               className="nice-scroll max-h-40 min-h-11 min-w-0 flex-1 resize-none rounded-3xl border border-line bg-surface px-4 py-2.5 text-[15px] leading-snug outline-none transition placeholder:text-muted/70 focus:border-accent lg:bg-ink"
             />
             <button
               disabled={!canWrite || !text.trim()}
-              aria-label="Envoyer"
+              aria-label={t('Envoyer')}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-ink transition hover:bg-accent-soft disabled:opacity-40"
             >
               <SendIcon />

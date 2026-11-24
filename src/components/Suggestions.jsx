@@ -3,6 +3,7 @@ import { tasteBatch, peopleSuggestions, mergeSuggestions, verifyVinyl, knownViny
 import { usePlayer, toggle } from '../lib/player'
 import { Avatar } from './Avatar'
 import { CheckIcon, PlusIcon } from './Icons'
+import { t } from '../lib/i18n'
 
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
@@ -48,7 +49,7 @@ function SuggestionCard({ s, status, onAdd }) {
           <button
             onClick={() => toggle(album)}
             data-player-control
-            aria-label={playing ? 'Mettre en pause' : `Écouter un extrait de ${v.title}`}
+            aria-label={playing ? t('Mettre en pause') : t('Écouter un extrait de {title}', { title: v.title })}
             className={`absolute bottom-2 left-2 flex h-10 w-10 items-center justify-center rounded-full bg-ink/90 text-paper shadow-lg backdrop-blur transition hover:scale-105 ${
               playing ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'
             }`}
@@ -72,11 +73,11 @@ function SuggestionCard({ s, status, onAdd }) {
         {s.people?.length > 0 && <Avatar member={s.people[0]} size={16} ring={false} />}
         <span className="line-clamp-2">{s.reason}</span>
       </p>
-      {current && player.status === 'unavailable' && <p className="mt-1 text-[11px] text-muted">Pas d’extrait trouvé.</p>}
+      {current && player.status === 'unavailable' && <p className="mt-1 text-[11px] text-muted">{t('Pas d’extrait trouvé.')}</p>}
       <div className="mt-2.5">
         {status ? (
           <span className="flex items-center gap-1 text-xs text-muted">
-            <CheckIcon width={14} height={14} /> {status === 'owned' ? 'Dans ta collection' : 'Dans tes souhaits'}
+            <CheckIcon width={14} height={14} /> {status === 'owned' ? t('Dans ta collection') : t('Dans tes souhaits')}
           </span>
         ) : (
           <div className="flex gap-1.5">
@@ -85,14 +86,14 @@ function SuggestionCard({ s, status, onAdd }) {
               disabled={!!busy}
               className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
             >
-              <PlusIcon width={13} height={13} /> {busy === 'wish' ? '…' : 'Souhait'}
+              <PlusIcon width={13} height={13} /> {busy === 'wish' ? '…' : t('Souhait')}
             </button>
             <button
               onClick={() => add('owned')}
               disabled={!!busy}
               className="rounded-full border border-line px-3 py-1.5 text-xs font-medium transition hover:border-accent disabled:opacity-50"
             >
-              {busy === 'owned' ? '…' : 'Je l’ai'}
+              {busy === 'owned' ? '…' : t('Je l’ai')}
             </button>
           </div>
         )}
@@ -144,7 +145,7 @@ function ScrollRow({ className, children }) {
             key={dir}
             type="button"
             onClick={() => go(dir)}
-            aria-label={dir < 0 ? 'Suggestions précédentes' : 'Suggestions suivantes'}
+            aria-label={dir < 0 ? t('Suggestions précédentes') : t('Suggestions suivantes')}
             className={`absolute top-[5.5rem] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-surface/95 text-paper shadow-lg backdrop-blur transition hover:scale-105 hover:border-accent pointer-fine:flex sm:top-24 ${
               dir < 0 ? '-left-3' : '-right-3'
             }`}
@@ -395,8 +396,8 @@ export default function Suggestions({ myItems, others, statusOf, onAdd, online }
     <section className="space-y-4">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-3xl font-black uppercase leading-none sm:text-4xl">Pour toi</h2>
-          <p className="mt-1.5 text-sm text-muted">D’après tes souhaits, ta collection et ce qu’ont tes proches.</p>
+          <h2 className="font-display text-3xl font-black uppercase leading-none sm:text-4xl">{t('Pour toi')}</h2>
+          <p className="mt-1.5 text-sm text-muted">{t('D’après tes souhaits, ta collection et ce qu’ont tes proches.')}</p>
         </div>
         {list.length > 0 && (
           <button
@@ -408,7 +409,7 @@ export default function Suggestions({ myItems, others, statusOf, onAdd, online }
             <span className={canAdvance ? '' : 'animate-spin'}>
               <RefreshIcon />
             </span>
-            {canAdvance ? 'Autres idées' : 'Je cherche…'}
+            {canAdvance ? t('Autres idées') : t('Je cherche…')}
           </button>
         )}
       </div>
@@ -422,10 +423,10 @@ export default function Suggestions({ myItems, others, statusOf, onAdd, online }
       ) : list.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-line px-5 py-6 text-sm text-muted">
           {error
-            ? `Suggestions indisponibles pour le moment (${error}).`
+            ? t('Suggestions indisponibles pour le moment ({error}).', { error })
             : !online
-              ? 'Reconnecte-toi pour voir des suggestions.'
-              : 'Ajoute quelques disques de plus pour avoir des suggestions.'}
+              ? t('Reconnecte-toi pour voir des suggestions.')
+              : t('Ajoute quelques disques de plus pour avoir des suggestions.')}
         </p>
       ) : (
         <ScrollRow key={round} className="no-scrollbar page-in -mx-5 flex snap-x scroll-px-5 gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0">
@@ -442,9 +443,9 @@ export default function Suggestions({ myItems, others, statusOf, onAdd, online }
           ))}
         </ScrollRow>
       )}
-      {restarted && <p className="text-xs text-muted">Tu as fait le tour de tes suggestions : on reprend depuis le début.</p>}
+      {restarted && <p className="text-xs text-muted">{t('Tu as fait le tour de tes suggestions : on reprend depuis le début.')}</p>}
       {!busy && failed > 0 && !tasteShown && list.length > 0 && (
-        <p className="text-xs text-muted">Discogs ne répond pas pour l’instant : les idées d’après tes goûts arrivent dans un moment.</p>
+        <p className="text-xs text-muted">{t('Discogs ne répond pas pour l’instant : les idées d’après tes goûts arrivent dans un moment.')}</p>
       )}
     </section>
   )

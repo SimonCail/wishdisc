@@ -54,6 +54,7 @@ import GiftIdeas from './components/GiftIdeas'
 import useRoomVisit from './hooks/useRoomVisit'
 import { getSpecials } from './lib/edition'
 import { ShareIcon, PlusIcon } from './components/Icons'
+import { t, tn } from './lib/i18n'
 
 // Disque à compléter : jamais passé par Discogs, ou pochette jamais cherchée.
 // cover_url = '' veut dire « cherchée, Discogs n'en a pas » : on ne réessaie pas.
@@ -287,7 +288,7 @@ export default function App() {
     if (!online) wasOffline.current = true
     else if (wasOffline.current) {
       wasOffline.current = false
-      toast('De retour en ligne')
+      toast(t('De retour en ligne'))
     }
   }, [online, toast])
 
@@ -304,7 +305,7 @@ export default function App() {
           setInvite(p)
           setAuthMode((m) => m ?? 'signup')
         } else {
-          toast("Ce lien d'invitation ne correspond à aucun salon", 'error')
+          toast(t('Ce lien d\'invitation ne correspond à aucun salon'), 'error')
           setInviteCode(null)
           clearInviteFromUrl()
         }
@@ -321,7 +322,7 @@ export default function App() {
           toast(pendingMessage(pending))
         } else {
           selectContext(joined.id)
-          toast(`Tu es déjà dans « ${joined.name} »`)
+          toast(t('Tu es déjà dans « {name} »', { name: joined.name }))
         }
       })
     }
@@ -396,7 +397,7 @@ export default function App() {
   // Inviter quelqu'un : partage du lien de l'app (ou copie)
   async function inviteFriend() {
     const url = window.location.origin
-    const text = `Rejoins-moi sur Wishdisc pour partager nos listes de vinyles : ajoute « ${me.name} » en ami.`
+    const text = t('Rejoins-moi sur Wishdisc pour partager nos listes de vinyles : ajoute « {name} » en ami.', { name: me.name })
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Wishdisc', text, url })
@@ -406,7 +407,7 @@ export default function App() {
       }
     }
     const ok = await copyToClipboard(`${text} ${url}`)
-    toast(ok ? 'Lien copié, envoie-le à qui tu veux' : url)
+    toast(ok ? t('Lien copié, envoie-le à qui tu veux') : url)
   }
   // Tous les profils connus (amis, demandes, membres de mes salons) : pour les messages
   const people = useMemo(() => {
@@ -429,7 +430,7 @@ export default function App() {
 
   function ensureOnline() {
     if (navigator.onLine) return true
-    toast('Tu es hors-ligne : modification impossible pour le moment', 'error')
+    toast(t('Tu es hors-ligne : modification impossible pour le moment'), 'error')
     return false
   }
 
@@ -471,11 +472,11 @@ export default function App() {
       .single()
 
     if (error) {
-      toast(error.code === '23505' ? 'Ce disque est déjà dans ta liste.' : error.message, 'error')
+      toast(error.code === '23505' ? t('Ce disque est déjà dans ta liste.') : error.message, 'error')
       return null
     }
     setItems((prev) => (prev.some((v) => v.id === data.id) ? prev : [data, ...prev]))
-    toast(`« ${data.title} » ajouté à ${status === 'wish' ? 'tes souhaits' : 'ta collection'}`)
+    toast(t('« {title} » ajouté à {v1}', { title: data.title, v1: status === 'wish' ? t('tes souhaits') : t('ta collection') }))
     return data
   }
 
@@ -503,7 +504,7 @@ export default function App() {
       status: 'owned',
       owned_at: new Date().toISOString(),
     })
-    if (data) toast(`« ${data.title} » rejoint ta collection`)
+    if (data) toast(t('« {title} » rejoint ta collection', { title: data.title }))
     return data
   }
 
@@ -539,14 +540,14 @@ export default function App() {
     }
 
     setRefreshing(null)
-    if (failed) toast(`${failed} disque(s) n'ont pas pu être mis à jour`, 'error')
-    else toast('Infos complétées')
+    if (failed) toast(tn(failed, '{n} disque n’a pas pu être mis à jour', '{n} disques n’ont pas pu être mis à jour'), 'error')
+    else toast(t('Infos complétées'))
   }
 
   // Import Discogs : ajoute les nouveaux disques par paquets de 100 et passe en
   // collection les souhaits déjà possédés. onProgress(n) suit l'avancement.
   async function importItems({ inserts, upgrades }, onProgress) {
-    if (!navigator.onLine) throw new Error('Pas de connexion internet.')
+    if (!navigator.onLine) throw new Error(t('Pas de connexion internet.'))
     const now = new Date().toISOString()
     const rows = inserts.map(({ item, status }) => ({
       discogs_id: item.discogs_id,
@@ -577,7 +578,7 @@ export default function App() {
           ignoreDuplicates: true, // déjà là (ajouté entre-temps ailleurs) : on n'y touche pas
         })
         .select()
-      if (error) throw new Error(`Import interrompu après ${done} disques : ${error.message}`)
+      if (error) throw new Error(t('Import interrompu après {done} disques : {message}', { done, message: error.message }))
       added.push(...data)
       done += Math.min(100, rows.length - i)
       onProgress(done)
@@ -591,7 +592,7 @@ export default function App() {
         .update({ status: 'owned', owned_at: now })
         .in('id', ids.slice(i, i + 100))
         .select()
-      if (error) throw new Error(`Import interrompu : ${error.message}`)
+      if (error) throw new Error(t('Import interrompu : {message}', { message: error.message }))
       upgraded.push(...data)
       done += Math.min(100, ids.length - i)
       onProgress(done)
@@ -616,17 +617,17 @@ export default function App() {
       .single()
     if (error) {
       const missing = error.code === 'PGRST204' || /edition/.test(error.message || '')
-      toast(missing ? 'Lance d’abord le script 22-edition.sql dans Supabase.' : error.message, 'error')
+      toast(missing ? t('Lance d’abord le script 22-edition.sql dans Supabase.') : error.message, 'error')
       return false
     }
     setItems((prev) => prev.map((v) => (v.id === data.id ? data : v)))
-    toast('Édition enregistrée')
+    toast(t('Édition enregistrée'))
     return true
   }
 
   async function confirmNote(note) {
     const data = await updateVinyl(noteTarget.myItem.id, { note: note || null })
-    if (data) toast('Note enregistrée')
+    if (data) toast(t('Note enregistrée'))
     setNoteTarget(null)
   }
 
@@ -639,7 +640,7 @@ export default function App() {
     const { error } = await messagesApi.clear(person.id)
     if (error) return toast(error, 'error')
     navigate(paths.messages, { replace: true })
-    toast('Conversation supprimée')
+    toast(t('Conversation supprimée'))
   }
 
   // Retirer un disque : tout de suite, avec 5 s pour annuler (pas de fenêtre « Es-tu sûr ? »)
@@ -677,16 +678,18 @@ export default function App() {
       setItems(back)
     }
     pendingDeletes.current.set(id, { timer: setTimeout(commit, UNDO_MS), commit })
-    toast(`« ${v.title} » retiré ${item.status === 'owned' ? 'de ta collection' : 'de tes souhaits'}`, 'success', {
+    toast(t('« {title} » retiré {v1}', { title: v.title, v1: item.status === 'owned' ? t('de ta collection') : t('de tes souhaits') }), 'success', {
       duration: UNDO_MS,
-      action: { label: 'Annuler', onClick: undo },
+      action: { label: t('Annuler'), onClick: undo },
     })
   }
 
   // --- Salons ---
   // Rejoindre = envoyer une demande au responsable, qui l'accepte ou la refuse
   const pendingMessage = (p) =>
-    `Demande envoyée${p.owner_name ? ` à ${p.owner_name}` : ''} : tu entreras dans « ${p.room_name} » dès que ce sera accepté.`
+    p.owner_name
+      ? t('Demande envoyée à {owner} : tu entreras dans « {room_name} » dès que ce sera accepté.', { owner: p.owner_name, room_name: p.room_name })
+      : t('Demande envoyée : tu entreras dans « {room_name} » dès que ce sera accepté.', { room_name: p.room_name })
 
   async function joinRoom(code) {
     const { room: joined, pending, error } = await roomActions.join(code)
@@ -696,7 +699,7 @@ export default function App() {
       return null
     }
     selectContext(joined.id)
-    toast(`Tu es déjà dans « ${joined.name} »`)
+    toast(t('Tu es déjà dans « {name} »', { name: joined.name }))
     return null
   }
 
@@ -708,8 +711,8 @@ export default function App() {
     if (res.error) return toast(res.error, 'error')
     if (accept) {
       loadVinyls()
-      toast(`${req.person.name} a rejoint « ${req.room_name} »`)
-    } else toast(`Demande de ${req.person.name} refusée`)
+      toast(t('{name} a rejoint « {room_name} »', { name: req.person.name, room_name: req.room_name }))
+    } else toast(t('Demande de {name} refusée', { name: req.person.name }))
   }
 
   async function cancelRequest(req) {
@@ -730,7 +733,7 @@ export default function App() {
       if (rooms.some((r) => r.id === id)) {
         awaiting.current.delete(id)
         loadVinyls()
-        toast(`Tu as été accepté dans « ${name} »`)
+        toast(t('Tu as été accepté dans « {name} »', { name }))
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -740,7 +743,7 @@ export default function App() {
     const { room: created, error } = await roomActions.create(name)
     if (error) return error
     selectContext(created.id)
-    toast(`Salon créé : donne le code ${created.code} à tes proches`)
+    toast(t('Salon créé : donne le code {code} à tes proches', { code: created.code }))
     return null
   }
 
@@ -752,7 +755,7 @@ export default function App() {
     if (error) return toast(error, 'error')
     selectContext('me')
     loadVinyls()
-    toast(`Tu as quitté « ${target.name} »`)
+    toast(t('Tu as quitté « {name} »', { name: target.name }))
   }
 
   // Réglages du salon (réservés au responsable) : on recharge les disques
@@ -810,7 +813,7 @@ export default function App() {
           demo: true,
           owner_id: userId,
           added_by: me?.name,
-          title: 'Disque de démo',
+          title: t('Disque de démo'),
           artist: 'Wishdisc',
           year: 2026,
           status: 'wish',
@@ -866,10 +869,10 @@ export default function App() {
         const g = gifts.byVinyl.get(String(it.id))
         return {
           vinylId: it.id,
-          owner: v.owners?.find((o) => o.id === it.owner_id) ?? people.get(it.owner_id) ?? { name: 'ce proche' },
+          owner: v.owners?.find((o) => o.id === it.owner_id) ?? people.get(it.owner_id) ?? { name: t('ce proche') },
           reservedBy: g?.reserved_by ?? null,
           mine: g?.reserved_by === userId,
-          reserverName: g ? people.get(g.reserved_by)?.name ?? 'quelqu’un' : null,
+          reserverName: g ? people.get(g.reserved_by)?.name ?? t('quelqu’un') : null,
         }
       })
   }
@@ -904,7 +907,7 @@ export default function App() {
     const err = await auth.verifyCode(email, code, type)
     if (!err && type === 'signup') {
       setAuthMode(null)
-      toast('Compte activé, bienvenue !')
+      toast(t('Compte activé, bienvenue !'))
     }
     // (mot de passe oublié : la fenêtre passe d'elle-même à « Nouveau mot de passe »)
     return err
@@ -919,7 +922,7 @@ export default function App() {
     const err = await auth.updatePassword(password)
     if (!err) {
       setAuthMode(null) // (sinon la fenêtre « mot de passe oublié » reviendrait)
-      toast('Mot de passe modifié')
+      toast(t('Mot de passe modifié'))
     }
     return err
   }
@@ -957,7 +960,7 @@ export default function App() {
       setProfileOpen(false)
       selectContext('me')
       applyAccent(null)
-      toast('Ton compte a été supprimé')
+      toast(t('Ton compte a été supprimé'))
     }
     return err
   }
@@ -967,7 +970,7 @@ export default function App() {
     await auth.signOut()
     applyAccent(null) // retour au vert du site
     selectContext('me')
-    toast('À bientôt !')
+    toast(t('À bientôt !'))
   }
 
   // --- Données dérivées ---
@@ -1083,7 +1086,7 @@ export default function App() {
   const pickerArtists = useMemo(() => {
     const counts = new Map()
     for (const v of items) {
-      if (v.artist && v.artist !== 'Artiste inconnu') counts.set(v.artist, (counts.get(v.artist) || 0) + 1)
+      if (v.artist && v.artist !== t('Artiste inconnu')) counts.set(v.artist, (counts.get(v.artist) || 0) + 1)
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name)
   }, [items])
@@ -1143,9 +1146,7 @@ export default function App() {
           topRight={
             <div className="flex items-center gap-2.5">
               <ThemeToggle />
-              <button onClick={() => setAuthMode('login')} className={topBtn}>
-                Se connecter
-              </button>
+              <button onClick={() => setAuthMode('login')} className={topBtn}>{t('Se connecter')}</button>
             </div>
           }
         />
@@ -1153,9 +1154,9 @@ export default function App() {
           <div className="animate-pop rounded-3xl border border-line bg-surface p-6 shadow-[0_10px_30px_-18px_rgba(27,36,32,0.4)] sm:p-8">
             <ul className="grid gap-6 sm:grid-cols-3">
               {[
-                ['#ec5b3e', 'Tes souhaits', 'Les disques que tu veux, avec ton niveau d’envie, et où les trouver.'],
-                ['#f1c04e', 'Ta collection', 'Ce que tu as déjà. « Je l’ai » fait passer un souhait exaucé dans ta collection.'],
-                ['#6aa6d6', 'Des salons', 'Avec un code, mets tout en commun avec ta moitié, tes amis ou ta famille.'],
+                ['#ec5b3e', t('Tes souhaits'), t('Les disques que tu veux, avec ton niveau d’envie, et où les trouver.')],
+                ['#f1c04e', t('Ta collection'), t('Ce que tu as déjà. « Je l’ai » fait passer un souhait exaucé dans ta collection.')],
+                ['#6aa6d6', t('Des salons'), t('Avec un code, mets tout en commun avec ta moitié, tes amis ou ta famille.')],
               ].map(([color, title, text]) => (
                 <li key={title}>
                   <div className="vinyl-disc h-12 w-12" style={{ '--disc-label': color }} />
@@ -1168,15 +1169,11 @@ export default function App() {
               <button
                 onClick={() => setAuthMode('signup')}
                 className="rounded-full bg-accent px-6 py-3 font-bold text-ink transition hover:bg-accent-soft"
-              >
-                Créer mon compte
-              </button>
+              >{t('Créer mon compte')}</button>
               <button
                 onClick={() => setAuthMode('login')}
                 className="rounded-full border border-line px-6 py-3 font-medium transition hover:border-accent hover:bg-raised"
-              >
-                J'ai déjà un compte
-              </button>
+              >{t('J\'ai déjà un compte')}</button>
             </div>
           </div>
         </main>
@@ -1187,19 +1184,19 @@ export default function App() {
   }
 
   const context = room ?? (friend ? { kind: 'friend', id: friend.id, friend } : { kind: 'me', me })
-  const listLabel = tab === 'wish' ? 'Souhaits' : 'Collection'
+  const listLabel = tab === 'wish' ? t('Souhaits') : t('Collection')
   const emptyText = friend
     ? {
-        wish: [`${friend.name} n’a pas encore de souhaits`, 'Reviens plus tard, ou glisse-lui l’idée d’en ajouter.'],
-        owned: [`La collection de ${friend.name} est vide`, 'Aucun disque marqué « Je l’ai » pour l’instant.'],
+        wish: [t('{name} n’a pas encore de souhaits', { name: friend.name }), t('Reviens plus tard, ou glisse-lui l’idée d’en ajouter.')],
+        owned: [t('La collection de {name} est vide', { name: friend.name }), t('Aucun disque marqué « Je l’ai » pour l’instant.')],
       }[tab]
     : {
     wish: room
-      ? ['Aucun souhait dans ce salon', 'Ajoute un disque : il apparaît chez toi et ici.']
-      : ['Ton bac à souhaits est vide', 'Ajoute ton premier disque : cherche un artiste ou scanne une pochette.'],
+      ? [t('Aucun souhait dans ce salon'), t('Ajoute un disque : il apparaît chez toi et ici.')]
+      : [t('Ton bac à souhaits est vide'), t('Ajoute ton premier disque : cherche un artiste ou scanne une pochette.')],
     owned: room
-      ? ['Aucune collection ici pour l’instant', 'Ajoute les disques que tu as déjà avec « Je l’ai ».']
-      : ['Ta collection est vide', 'Ajoute les disques que tu as déjà avec « Je l’ai ».'],
+      ? [t('Aucune collection ici pour l’instant'), t('Ajoute les disques que tu as déjà avec « Je l’ai ».')]
+      : [t('Ta collection est vide'), t('Ajoute les disques que tu as déjà avec « Je l’ai ».')],
   }[tab]
 
   const gridClass =
@@ -1270,8 +1267,8 @@ export default function App() {
     people.get(id) ??
     (partners instanceof Map ? partners.get(id) : null) ??
     (partners instanceof Map
-      ? { id, name: 'Compte supprimé', color: '#9aa398', deleted: true }
-      : { id, name: 'Ancien ami', color: '#9aa398' })
+      ? { id, name: t('Compte supprimé'), color: '#9aa398', deleted: true }
+      : { id, name: t('Ancien ami'), color: '#9aa398' })
   // null tant qu'on ne sait pas encore qui c'est (le temps de charger)
   const chatFriend =
     route.name !== 'chat' ? null : people.has(route.id) || partners !== null ? personOf(route.id) : null
@@ -1300,12 +1297,12 @@ export default function App() {
       )}
       {room && (
         <PageHeader
-          back={{ label: 'Salons', onClick: () => navigate(paths.rooms) }}
+          back={{ label: t('Salons'), onClick: () => navigate(paths.rooms) }}
           discColor={roomColor(room)}
           media={
             <button
               onClick={() => room.owner_id === userId && setRoomSettingsOpen(true)}
-              title={room.owner_id === userId ? 'Gérer le salon' : undefined}
+              title={room.owner_id === userId ? t('Gérer le salon') : undefined}
               className={room.owner_id === userId ? 'block transition hover:scale-[1.03]' : 'block cursor-default'}
             >
               <RoomCover room={room} size={84} className="rounded-2xl ring-4 ring-ink/25 shadow-xl shadow-black/30" />
@@ -1315,62 +1312,56 @@ export default function App() {
           subtitle={
             <span className="flex items-center gap-2.5">
               <AvatarStack members={room.members} size={26} max={6} />
-              {room.members.length} membre{room.members.length > 1 ? 's' : ''}
+              {tn(room.members.length, '{n} membre', '{n} membres')}
               {room.owner_id === userId && (
                 <span className="flex items-center gap-1 text-ink/70">
-                  · <CrownIcon width={13} height={13} /> tu es responsable
-                </span>
+                  · <CrownIcon width={13} height={13} />{' '}{t('tu es responsable')}</span>
               )}
             </span>
           }
           actions={
             <>
-              <button onClick={copyInvite} className={headerBtn} aria-label={`Inviter dans le salon (code ${room.code})`}>
+              <button onClick={copyInvite} className={headerBtn} aria-label={t('Inviter dans le salon (code {code})', { code: room.code })}>
                 <span className="font-mono tracking-wider">{room.code}</span>
               </button>
               {room.owner_id === userId && (
                 <button onClick={() => setRoomSettingsOpen(true)} className={`${headerBtnSolid} relative`}>
-                  <CrownIcon width={14} height={14} /> Gérer
-                  {roomRequests.incoming.some((q) => q.room_id === room.id) && (
+                  <CrownIcon width={14} height={14} />{' '}{t('Gérer')}{roomRequests.incoming.some((q) => q.room_id === room.id) && (
                     <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-coral px-1 font-mono text-[11px] font-bold text-white">
                       {roomRequests.incoming.filter((q) => q.room_id === room.id).length}
                     </span>
                   )}
                 </button>
               )}
-              <button onClick={() => setLeaveTarget(room)} className={headerBtn}>
-                Quitter
-              </button>
+              <button onClick={() => setLeaveTarget(room)} className={headerBtn}>{t('Quitter')}</button>
             </>
           }
         />
       )}
       {friend && (
         <PageHeader
-          back={{ label: 'Amis', onClick: () => navigate(paths.friends) }}
+          back={{ label: t('Amis'), onClick: () => navigate(paths.friends) }}
           discColor={friend.color}
           media={<Avatar member={friend} size={84} ring={false} className="ring-4 ring-ink/25 shadow-xl shadow-black/30" />}
-          title={<>Chez {friend.name}</>}
-          subtitle="Ses souhaits et sa collection. Une idée de cadeau, ou un disque à ajouter à ta liste."
+          title={t('Chez {name}', { name: friend.name })}
+          subtitle={t('Ses souhaits et sa collection. Une idée de cadeau, ou un disque à ajouter à ta liste.')}
           actions={
-            <button onClick={() => navigate(paths.chat(friend.id))} className={headerBtnSolid}>
-              Lui écrire
-            </button>
+            <button onClick={() => navigate(paths.chat(friend.id))} className={headerBtnSolid}>{t('Lui écrire')}</button>
           }
         />
       )}
       {route.name === 'rooms' && (
         <PageHeader
           discColor="#6aa6d6"
-          title="Salons"
-          subtitle="Vos souhaits et vos collections mis en commun, par code."
+          title={t('Salons')}
+          subtitle={t('Vos souhaits et vos collections mis en commun, par code.')}
         />
       )}
       {route.name === 'friends' && (
         <PageHeader
           discColor="#f09aaa"
-          title="Amis"
-          subtitle="Regarde ce que veulent tes proches, et ce qu’ils ont déjà."
+          title={t('Amis')}
+          subtitle={t('Regarde ce que veulent tes proches, et ce qu’ils ont déjà.')}
         />
       )}
 
@@ -1466,19 +1457,15 @@ export default function App() {
         </div>
         )}
         {!friend && myItems.length < 10 && !loading && (
-          <p className="hidden text-sm text-muted md:-mt-8 md:block">
-            Déjà un compte Discogs ?{' '}
-            <button onClick={() => setImportOpen(true)} className="font-medium text-accent underline-offset-4 hover:underline">
-              Importer ta collection et ta wantlist
-            </button>
+          <p className="hidden text-sm text-muted md:-mt-8 md:block">{t('Déjà un compte Discogs ?')}{' '}<button onClick={() => setImportOpen(true)} className="font-medium text-accent underline-offset-4 hover:underline">{t('Importer ta collection et ta wantlist')}</button>
           </p>
         )}
 
         <section ref={listRef} className="scroll-mt-4">
           <ShelfTabs
             tab={tab}
-            onTab={(t) => {
-              setTab(t)
+            onTab={(tx) => {
+              setTab(tx)
               setDetailKey(null)
             }}
             counts={{ wish: lists.wish.length, owned: lists.owned.length }}
@@ -1489,12 +1476,12 @@ export default function App() {
                     <button
                       onClick={refreshInfos}
                       disabled={!!refreshing}
-                      title="Récupère les genres et les pochettes qui manquent"
+                      title={t('Récupère les genres et les pochettes qui manquent')}
                       className="rounded-full border border-line px-3 py-1 text-xs text-muted transition hover:border-accent hover:text-paper disabled:opacity-60"
                     >
                       {refreshing
-                        ? `Mise à jour ${refreshing.done}/${refreshing.total}…`
-                        : `Compléter les infos (${missingCount})`}
+                        ? t('Mise à jour {done}/{total}…', { done: refreshing.done, total: refreshing.total })
+                        : t('Compléter les infos ({missingCount})', { missingCount })}
                     </button>
                   )}
                   <button
@@ -1502,8 +1489,7 @@ export default function App() {
                     disabled={visible.length === 0}
                     className="flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1 text-xs font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
                   >
-                    <ShareIcon width={14} height={14} /> Partager
-                  </button>
+                    <ShareIcon width={14} height={14} />{' '}{t('Partager')}</button>
                 </div>
               )
             }
@@ -1512,12 +1498,12 @@ export default function App() {
                 <button
                   onClick={refreshInfos}
                   disabled={!!refreshing}
-                  title="Récupère les genres et les pochettes qui manquent"
+                  title={t('Récupère les genres et les pochettes qui manquent')}
                   className="rounded-full border border-line px-3 py-1 text-xs text-muted transition hover:border-accent hover:text-paper disabled:opacity-60"
                 >
                   {refreshing
-                    ? `Mise à jour ${refreshing.done}/${refreshing.total}…`
-                    : `Compléter les infos (${missingCount})`}
+                    ? t('Mise à jour {done}/{total}…', { done: refreshing.done, total: refreshing.total })
+                    : t('Compléter les infos ({missingCount})', { missingCount })}
                 </button>
               )
             }
@@ -1525,10 +1511,10 @@ export default function App() {
 
           {/* Salon : « Tous les disques / Idées cadeaux » */}
           {room && tab === 'wish' && all.length > 0 && (
-            <div role="tablist" aria-label="Affichage du salon" className="mb-5 grid grid-cols-2 rounded-full bg-raised p-1 sm:inline-grid sm:w-80">
+            <div role="tablist" aria-label={t('Affichage du salon')} className="mb-5 grid grid-cols-2 rounded-full bg-raised p-1 sm:inline-grid sm:w-80">
               {[
-                ['all', 'Tous les disques'],
-                ['gifts', 'Idées cadeaux'],
+                ['all', t('Tous les disques')],
+                ['gifts', t('Idées cadeaux')],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -1558,11 +1544,11 @@ export default function App() {
               onOpen={(key) => setDetailKey(key)}
               onReserve={async (e) => {
                 const err = await gifts.reserve(e.it.id)
-                toast(err || `Réservé : ${e.owner.name} ne le saura pas`, err ? 'error' : 'success')
+                toast(err || t('Réservé : {name} ne le saura pas', { name: e.owner.name }), err ? 'error' : 'success')
               }}
               onCancel={async (e) => {
                 const err = await gifts.cancel(e.it.id)
-                toast(err || 'Réservation annulée', err ? 'error' : 'success')
+                toast(err || t('Réservation annulée'), err ? 'error' : 'success')
               }}
             />
           ) : (
@@ -1594,11 +1580,9 @@ export default function App() {
                 onReset={resetFilters}
                 onShare={() => setShareOpen(true)}
                 shareDisabled={visible.length === 0}
-                placeholder={`Chercher dans ${
-                  friend ? `les ${tab === 'wish' ? 'souhaits' : 'disques'} de ${friend.name}`
-                  : room ? `les ${tab === 'wish' ? 'souhaits' : 'collections'} du salon`
-                  : tab === 'wish' ? 'mes souhaits' : 'ma collection'
-                }`}
+                placeholder={t('Chercher dans {v1}', { v1: friend ? (tab === 'wish' ? t('les souhaits de {name}', { name: friend.name }) : t('les disques de {name}', { name: friend.name }))
+                  : room ? (tab === 'wish' ? t('les souhaits du salon') : t('les collections du salon'))
+                  : tab === 'wish' ? t('mes souhaits') : t('ma collection') })}
               />
             </>
           )}
@@ -1620,10 +1604,10 @@ export default function App() {
                 style={{ '--disc-label': tab === 'wish' ? '#ec5b3e' : '#f1c04e' }}
               />
               <p className="mt-6 font-display text-2xl font-bold uppercase">
-                {online ? emptyText[0] : 'Pas de connexion'}
+                {online ? emptyText[0] : t('Pas de connexion')}
               </p>
               <p className="mt-1 text-sm text-muted">
-                {online ? emptyText[1] : 'Reconnecte-toi une première fois pour charger la liste.'}
+                {online ? emptyText[1] : t('Reconnecte-toi une première fois pour charger la liste.')}
               </p>
               {/* Téléphone : même chose que le bouton « + » */}
               {!friend && online && (
@@ -1631,8 +1615,7 @@ export default function App() {
                   onClick={() => setAddSheet({ seed: null })}
                   className="mx-auto mt-5 flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-ink transition hover:bg-accent-soft md:hidden"
                 >
-                  <PlusIcon width={16} height={16} /> Ajouter un disque
-                </button>
+                  <PlusIcon width={16} height={16} />{' '}{t('Ajouter un disque')}</button>
               )}
             </div>
           ) : shelvesMode ? (
@@ -1655,33 +1638,29 @@ export default function App() {
               {canSearchToAdd ? (
                 <>
                   {/* Sans doute tapé ici pour ajouter un disque : on propose la bonne barre */}
-                  <p className="text-muted">
-                    Aucun disque « {search.trim()} » dans {tab === 'wish' ? 'tes souhaits' : 'ta collection'}{room ? ' ni dans le salon' : ''}.
+                  <p className="text-muted">{room
+                      ? tab === 'wish' ? t('Aucun disque « {q} » dans tes souhaits ni dans le salon.', { q: search.trim() }) : t('Aucun disque « {q} » dans ta collection ni dans le salon.', { q: search.trim() })
+                      : tab === 'wish' ? t('Aucun disque « {q} » dans tes souhaits.', { q: search.trim() }) : t('Aucun disque « {q} » dans ta collection.', { q: search.trim() })}
                   </p>
                   <div className="mt-4 flex flex-wrap justify-center gap-2">
                     <button
                       onClick={() => searchToAdd(search.trim())}
                       className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-bold text-ink transition hover:bg-accent-soft"
                     >
-                      <PlusIcon width={16} height={16} /> Chercher « {search.trim()} » pour l’ajouter
-                    </button>
+                      <PlusIcon width={16} height={16} />{' '}{t('Chercher « {trim} » pour l’ajouter', { trim: search.trim() })}</button>
                     <button
                       onClick={resetFilters}
                       className="rounded-full border border-line px-4 py-2 text-sm transition hover:border-accent"
-                    >
-                      Effacer
-                    </button>
+                    >{t('Effacer')}</button>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-muted">Aucun disque ne correspond à ces filtres.</p>
+                  <p className="text-muted">{t('Aucun disque ne correspond à ces filtres.')}</p>
                   <button
                     onClick={resetFilters}
                     className="mt-3 rounded-full border border-line px-4 py-1.5 text-sm transition hover:border-accent"
-                  >
-                    Réinitialiser
-                  </button>
+                  >{t('Réinitialiser')}</button>
                 </>
               )}
             </div>
@@ -1692,7 +1671,7 @@ export default function App() {
               <div className="-mt-1 mb-6 flex items-center gap-3">
                 <button
                   onClick={() => setPerson('')}
-                  aria-label="Revenir au salon"
+                  aria-label={t('Revenir au salon')}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-xl transition hover:border-accent"
                 >
                   ‹
@@ -1700,21 +1679,18 @@ export default function App() {
                 <Avatar member={personShown} size={36} ring={false} />
                 <p className="min-w-0 leading-tight">
                   <span className="block truncate font-display text-xl font-black uppercase">
-                    {personShown.id === userId ? 'Mes' : `Les`} {tab === 'wish' ? 'souhaits' : 'disques'}
-                    {personShown.id === userId ? '' : ` de ${personShown.name}`}
+                    {personShown.id === userId
+                      ? tab === 'wish' ? t('Mes souhaits') : t('Mes disques')
+                      : tab === 'wish' ? t('Les souhaits de {name}', { name: personShown.name }) : t('Les disques de {name}', { name: personShown.name })}
                   </span>
                   <span className="block text-sm text-muted">
-                    {visible.length} disque{visible.length > 1 ? 's' : ''} · salon {room.name}
+                    {tn(visible.length, '{n} disque · salon {name}', '{n} disques · salon {name}', { name: room.name })}
                   </span>
                 </p>
               </div>
             )}
             {canSearchToAdd && (
-              <p className="-mt-2 mb-5 text-sm text-muted">
-                Tu veux ajouter un disque ?{' '}
-                <button onClick={() => searchToAdd(search.trim())} className="font-medium text-accent underline-offset-4 hover:underline">
-                  Chercher « {search.trim()} » pour l’ajouter
-                </button>
+              <p className="-mt-2 mb-5 text-sm text-muted">{t('Tu veux ajouter un disque ?')}{' '}<button onClick={() => searchToAdd(search.trim())} className="font-medium text-accent underline-offset-4 hover:underline">{t('Chercher « {trim} » pour l’ajouter', { trim: search.trim() })}</button>
               </p>
             )}
             <ul className={gridClass}>
@@ -1780,11 +1756,11 @@ export default function App() {
           gifts={giftRowsOf(detailVinyl)}
           onReserve={async (row) => {
             const err = await gifts.reserve(row.vinylId)
-            toast(err || `Réservé : ${row.owner.name} ne le saura pas`, err ? 'error' : 'success')
+            toast(err || t('Réservé : {name} ne le saura pas', { name: row.owner.name }), err ? 'error' : 'success')
           }}
           onCancelGift={async (row) => {
             const err = await gifts.cancel(row.vinylId)
-            toast(err || 'Réservation annulée', err ? 'error' : 'success')
+            toast(err || t('Réservation annulée'), err ? 'error' : 'success')
           }}
         />
       )}
@@ -1793,10 +1769,10 @@ export default function App() {
           vinyls={visible}
           title={
             room
-              ? `${listLabel} du salon « ${room.name} »`
+              ? t('{listLabel} du salon « {name} »', { listLabel, name: room.name })
               : friend
                 ? `${listLabel} de ${friend.name}`
-                : tab === 'wish' ? 'Mes souhaits vinyles' : 'Ma collection de vinyles'
+                : tab === 'wish' ? t('Mes souhaits vinyles') : t('Ma collection de vinyles')
           }
           filtered={hasFilters}
           inviteUrl={room ? inviteUrl(room.code) : null}
@@ -1885,28 +1861,26 @@ export default function App() {
       )}
       {clearTarget && (
         <ConfirmDialog
-          title="Supprimer cette conversation ?"
+          title={t('Supprimer cette conversation ?')}
           message={
             clearTarget.deleted
-              ? 'Les messages seront effacés définitivement.'
-              : `Les messages disparaîtront de ton côté. ${clearTarget.name} garde sa copie, et si tu reçois un nouveau message la conversation reviendra.`
+              ? t('Les messages seront effacés définitivement.')
+              : t('Les messages disparaîtront de ton côté. {name} garde sa copie, et si tu reçois un nouveau message la conversation reviendra.', { name: clearTarget.name })
           }
-          confirmLabel="Supprimer"
+          confirmLabel={t('Supprimer')}
           onConfirm={confirmClear}
           onClose={() => setClearTarget(null)}
         />
       )}
       {leaveTarget && (
         <ConfirmDialog
-          title="Quitter ce salon ?"
-          message={`Tu ne verras plus les disques des autres membres de « ${leaveTarget.name} ». Ta liste perso ne change pas. Pour revenir, il faudra redemander avec le code.${
-            leaveTarget.owner_id === userId && leaveTarget.members.length > 1
-              ? ' Tu es responsable : le membre le plus ancien prendra le relais.'
+          title={t('Quitter ce salon ?')}
+          message={t('Tu ne verras plus les disques des autres membres de « {name} ». Ta liste perso ne change pas. Pour revenir, il faudra redemander avec le code.', { name: leaveTarget.name }) + (leaveTarget.owner_id === userId && leaveTarget.members.length > 1
+              ? ' ' + t('Tu es responsable : le membre le plus ancien prendra le relais.')
               : leaveTarget.members.length <= 1
-                ? ' Tu es le dernier membre : le salon sera supprimé.'
-                : ''
-          }`}
-          confirmLabel="Quitter"
+                ? ' ' + t('Tu es le dernier membre : le salon sera supprimé.')
+                : '')}
+          confirmLabel={t('Quitter')}
           onConfirm={confirmLeave}
           onClose={() => setLeaveTarget(null)}
         />

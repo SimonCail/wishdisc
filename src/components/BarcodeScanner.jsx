@@ -3,6 +3,7 @@ import Cover from './Cover'
 import { CloseIcon, CheckIcon, PlusIcon } from './Icons'
 import { openCamera, waitFrames, startDecoding, decodeImageFile, cameraAvailable, cameraMessage, isValidBarcode, cleanBarcode } from '../lib/barcode'
 import { searchByBarcode, itemKey } from '../lib/discogs'
+import { t } from '../lib/i18n'
 
 const RESUME_MS = 1100 // pause après un ajout, avant de scanner le suivant
 
@@ -159,7 +160,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
     }
     if (found) lookup(found)
     else {
-      setLookupError('Code-barres illisible sur cette photo. Reprends-la de plus près, bien à plat et nette, ou tape les chiffres.')
+      setLookupError(t('Code-barres illisible sur cette photo. Reprends-la de plus près, bien à plat et nette, ou tape les chiffres.'))
       setPhase('notfound')
     }
   }
@@ -190,7 +191,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
     e.preventDefault()
     const value = cleanBarcode(manual)
     if (!isValidBarcode(value)) {
-      setManualError('Ce code ne semble pas valide : vérifie les 12 ou 13 chiffres sous les barres.')
+      setManualError(t('Ce code ne semble pas valide : vérifie les 12 ou 13 chiffres sous les barres.'))
       return
     }
     setManualError(null)
@@ -205,20 +206,16 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Scanner un code-barres"
+        aria-label={t('Scanner un code-barres')}
         className="animate-pop flex max-h-[96vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-accent text-ink shadow-2xl shadow-black/60 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
           <div>
-            <h3 className="font-display text-4xl font-black uppercase leading-[0.85]">
-              Scanne tes
-              <br />
-              disques.
-            </h3>
-            <p className="mt-2 text-sm text-ink/75">Vise le code-barres au dos de la pochette.</p>
+            <h3 className="font-display text-4xl font-black uppercase leading-[0.85]">{t('Scanne tes')}<br />{t('disques.')}</h3>
+            <p className="mt-2 text-sm text-ink/75">{t('Vise le code-barres au dos de la pochette.')}</p>
           </div>
-          <button onClick={onClose} aria-label="Fermer" className="-mr-1 rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink">
+          <button onClick={onClose} aria-label={t('Fermer')} className="-mr-1 rounded-full p-1.5 text-ink/80 transition hover:bg-ink/15 hover:text-ink">
             <CloseIcon width={22} height={22} />
           </button>
         </div>
@@ -231,7 +228,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
               muted
               playsInline
               autoPlay
-              aria-label="Image de la caméra"
+              aria-label={t('Image de la caméra')}
               className={`h-full w-full object-cover transition-opacity duration-300 ${camera === 'on' ? 'opacity-100' : 'opacity-0'}`}
             />
 
@@ -247,9 +244,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
 
             {camera === 'starting' && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-ink/80">
-                <span className="vinyl-disc animate-rotate block h-10 w-10" />
-                Ouverture de la caméra…
-              </div>
+                <span className="vinyl-disc animate-rotate block h-10 w-10" />{t('Ouverture de la caméra…')}</div>
             )}
             {camera === 'tap' && (
               <button
@@ -259,9 +254,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
               >
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/40">
                   <CameraIcon width={26} height={26} />
-                </span>
-                Touche pour lancer la caméra
-              </button>
+                </span>{t('Touche pour lancer la caméra')}</button>
             )}
             {camera === 'off' && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm leading-relaxed text-ink/85">
@@ -271,9 +264,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
                     type="button"
                     onClick={() => setAttempt((a) => a + 1)}
                     className="rounded-full bg-ink px-4 py-2 text-xs font-bold text-accent transition hover:bg-surface"
-                  >
-                    Réessayer
-                  </button>
+                  >{t('Réessayer')}</button>
                 )}
               </div>
             )}
@@ -283,7 +274,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
             {phase === 'looking' && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm font-medium">
                 <span className="vinyl-disc animate-rotate block h-12 w-12" style={{ '--disc-label': '#f1c04e' }} />
-                {code ? 'Recherche sur Discogs…' : 'Lecture de la photo…'}
+                {code ? t('Recherche sur Discogs…') : t('Lecture de la photo…')}
                 {code && <span className="font-mono text-xs text-ink/70">{code}</span>}
               </div>
             )}
@@ -294,9 +285,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
             {phase === 'result' && result && (
               <div className="animate-pop mt-4 space-y-2">
                 {result.notVinyl && (
-                  <p className="rounded-xl bg-ink/15 px-3 py-2 text-xs">
-                    Ce code correspond à une autre édition (CD…). On ajoutera l’album en vinyle.
-                  </p>
+                  <p className="rounded-xl bg-ink/15 px-3 py-2 text-xs">{t('Ce code correspond à une autre édition (CD…). On ajoutera l’album en vinyle.')}</p>
                 )}
                 {result.items.map((item) => {
                   const key = itemKey(item)
@@ -314,12 +303,11 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
                         </p>
                         {added ? (
                           <p className="mt-1 flex items-center gap-1 text-xs font-bold text-accent">
-                            <CheckIcon width={14} height={14} /> Ajouté à {done.status === 'owned' ? 'ta collection' : 'tes souhaits'}
+                            <CheckIcon width={14} height={14} />{' '}{done.status === 'owned' ? t('Ajouté à ta collection') : t('Ajouté à tes souhaits')}
                           </p>
                         ) : status === 'owned' ? (
                           <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-                            <CheckIcon width={14} height={14} /> Déjà dans ta collection
-                          </p>
+                            <CheckIcon width={14} height={14} />{' '}{t('Déjà dans ta collection')}</p>
                         ) : (
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             <button
@@ -327,7 +315,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
                               disabled={busy || offline}
                               className="flex items-center gap-1 rounded-full bg-accent px-3.5 py-1.5 text-xs font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
                             >
-                              <CheckIcon width={13} height={13} /> {status === 'wish' ? 'Je l’ai eu !' : 'Je l’ai'}
+                              <CheckIcon width={13} height={13} /> {status === 'wish' ? t('Je l’ai eu !') : t('Je l’ai')}
                             </button>
                             {status !== 'wish' && (
                               <button
@@ -335,8 +323,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
                                 disabled={busy || offline}
                                 className="flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium transition hover:border-accent disabled:opacity-50"
                               >
-                                <PlusIcon width={13} height={13} /> Souhait
-                              </button>
+                                <PlusIcon width={13} height={13} />{' '}{t('Souhait')}</button>
                             )}
                           </div>
                         )}
@@ -350,10 +337,10 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
             {phase === 'notfound' && (
               <div className="animate-pop mt-4 rounded-2xl bg-surface p-4 text-sm text-paper">
                 <p className="font-bold">
-                  {lookupError ? (code ? 'Recherche impossible' : 'Photo illisible') : 'Introuvable sur Discogs'}
+                  {lookupError ? (code ? t('Recherche impossible') : t('Photo illisible')) : t('Introuvable sur Discogs')}
                 </p>
                 <p className="mt-1 text-muted">
-                  {lookupError || <>Aucun disque avec le code <span className="font-mono">{code}</span>. Essaie la recherche par nom.</>}
+                  {lookupError || <>{t('Aucun disque avec le code')}{' '}<span className="font-mono">{code}</span>{t('. Essaie la recherche par nom.')}</>}
                 </p>
               </div>
             )}
@@ -363,7 +350,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
                 onClick={resume}
                 className="mt-3 w-full rounded-full bg-ink py-2.5 text-sm font-bold text-accent transition hover:bg-surface"
               >
-                {done ? 'Scanner le suivant' : camera === 'on' ? 'Scanner un autre disque' : 'OK'}
+                {done ? t('Scanner le suivant') : camera === 'on' ? t('Scanner un autre disque') : 'OK'}
               </button>
             )}
           </div>
@@ -378,13 +365,12 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
               camera === 'on' ? 'border border-ink/30 text-ink hover:bg-ink/10' : 'bg-ink text-accent hover:bg-surface'
             }`}
           >
-            <CameraIcon /> Prendre le code en photo
-          </button>
+            <CameraIcon />{' '}{t('Prendre le code en photo')}</button>
 
           {/* Saisie à la main */}
           <form onSubmit={submitManual} className="mt-4">
             <label htmlFor="manual-barcode" className="text-xs font-medium text-ink/75">
-              {camera === 'on' ? 'Le code ne passe pas ? Tape les chiffres :' : 'Code-barres (chiffres sous les barres) :'}
+              {camera === 'on' ? t('Le code ne passe pas ? Tape les chiffres :') : t('Code-barres (chiffres sous les barres) :')}
             </label>
             <div className="mt-1.5 flex gap-2">
               <input
@@ -393,13 +379,11 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
                 onChange={(e) => setManual(e.target.value)}
                 inputMode="numeric"
                 autoComplete="off"
-                placeholder="ex. 3700187667852"
+                placeholder={t('ex. 3700187667852')}
                 disabled={offline}
                 className="w-full min-w-0 rounded-xl border border-ink/25 bg-ink/10 px-3 py-2 font-mono text-sm tracking-wider text-ink outline-none placeholder:text-ink/50 focus:border-ink/60"
               />
-              <button disabled={!manual.trim() || offline || phase === 'looking'} className="shrink-0 rounded-full bg-ink px-4 text-sm font-bold text-accent transition hover:bg-surface disabled:opacity-50">
-                Chercher
-              </button>
+              <button disabled={!manual.trim() || offline || phase === 'looking'} className="shrink-0 rounded-full bg-ink px-4 text-sm font-bold text-accent transition hover:bg-surface disabled:opacity-50">{t('Chercher')}</button>
             </div>
             {manualError && <p className="mt-1.5 text-xs font-medium">{manualError}</p>}
           </form>
@@ -407,9 +391,7 @@ export default function BarcodeScanner({ statusOf, onAdd, onGotIt, onClose, offl
           {/* Ajouts de la session */}
           {session.length > 0 && (
             <div className="mt-5 border-t border-ink/15 pt-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink/70">
-                Ajoutés maintenant · {session.length}
-              </p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink/70">{t('Ajoutés maintenant · {length}', { length: session.length })}</p>
               <ul className="mt-2 flex gap-2 overflow-x-auto pb-1">
                 {session.map((s) => (
                   <li key={itemKey(s)} className="w-14 shrink-0" title={`${s.artist} – ${s.title}`}>

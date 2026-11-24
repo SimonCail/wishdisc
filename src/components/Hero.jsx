@@ -3,6 +3,7 @@ import SpinningDisc from './SpinningDisc'
 import { RoomCover, roomColor } from './Rooms'
 import { usePlayer, toggle } from '../lib/player'
 import { BrandMark } from './Layout'
+import { t } from '../lib/i18n'
 
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
@@ -32,7 +33,7 @@ function NowSpinning({ disc }) {
         <button
           onClick={() => toggle(album)}
           data-player-control
-          aria-label={playing ? 'Mettre en pause' : `Écouter ${disc.title}`}
+          aria-label={playing ? t('Mettre en pause') : t('Écouter {title}', { title: disc.title })}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-accent shadow-lg transition hover:scale-105"
         >
           {current && player.status === 'loading' ? (
@@ -51,21 +52,19 @@ function NowSpinning({ disc }) {
           ) : (
             <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-shimmer rounded-full bg-coral" />
           )}
-          <span className="truncate">
-            Sur la platine · {disc.title}
-            {disc.artist && ` — ${disc.artist}`}
+          <span className="truncate">{t('Sur la platine · {title}', { title: disc.title })}{disc.artist && ` — ${disc.artist}`}
           </span>
         </span>
         {current && track && (
           <span className="mt-1 block truncate normal-case tracking-normal text-ink/85">
-            {track.title} <span className="text-ink/55">· extrait {player.index + 1}/{player.tracks.length}</span>
+            {track.title} <span className="text-ink/55">{t('· extrait {i}/{total}', { i: player.index + 1, total: player.tracks.length })}</span>
           </span>
         )}
         {current && player.status === 'waiting' && (
-          <span className="mt-1 block normal-case tracking-normal text-ink/60">Touche l’écran pour lancer la musique.</span>
+          <span className="mt-1 block normal-case tracking-normal text-ink/60">{t('Touche l’écran pour lancer la musique.')}</span>
         )}
         {current && player.status === 'unavailable' && (
-          <span className="mt-1 block normal-case tracking-normal text-ink/60">Pas d’extrait trouvé pour cet album.</span>
+          <span className="mt-1 block normal-case tracking-normal text-ink/60">{t('Pas d’extrait trouvé pour cet album.')}</span>
         )}
       </p>
     </div>
@@ -78,9 +77,7 @@ function NowChip({ disc, name }) {
   const player = usePlayer()
   if (!disc?.title) {
     return (
-      <p className="animate-fade-up mt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink/65" style={{ animationDelay: '120ms' }}>
-        La liste de {name}
-      </p>
+      <p className="animate-fade-up mt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink/65" style={{ animationDelay: '120ms' }}>{t('La liste de {name}', { name })}</p>
     )
   }
   const album = { key: disc.key ?? `${disc.artist}|${disc.title}`, title: disc.title, artist: disc.artist, cover_url: disc.cover_url }
@@ -100,7 +97,7 @@ function NowChip({ disc, name }) {
       <span className="min-w-0 text-left leading-tight">
         <span className="block truncate text-[13px] font-bold">{disc.title}</span>
         <span className="block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-ink/65">
-          {disc.artist ? disc.artist : 'Sur la platine'}
+          {disc.artist ? disc.artist : t('Sur la platine')}
         </span>
       </span>
       {canPlay && (
@@ -121,7 +118,7 @@ function NowChip({ disc, name }) {
     <button
       onClick={() => toggle(album)}
       data-player-control
-      aria-label={playing ? 'Mettre en pause' : `Écouter ${disc.title}`}
+      aria-label={playing ? t('Mettre en pause') : t('Écouter {title}', { title: disc.title })}
       className={`${cls} pr-1 transition active:scale-[0.97]`}
       style={{ animationDelay: '120ms' }}
     >
@@ -174,8 +171,7 @@ export default function Hero({ count, context, topRight, compact = false, dense 
             {/* Le nom de l'app (écran d'accueil sans compte) */}
             <span className="flex items-center gap-2.5">
               <BrandMark size={34} />
-              <span className="font-display text-[1.35rem] font-black uppercase leading-none tracking-tight">
-                Wish<span className="opacity-70">disc</span>
+              <span className="font-display text-[1.35rem] font-black uppercase leading-none tracking-tight">Wish<span className="opacity-70">disc</span>
               </span>
             </span>
             <div className="ml-auto">{topRight}</div>
@@ -189,52 +185,34 @@ export default function Hero({ count, context, topRight, compact = false, dense 
             <>
               <p className="animate-fade-up mb-4 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.15em] text-ink/70">
                 <RoomCover room={context} size={30} className="ring-2 ring-ink/40" />
-                <span className="min-w-0 truncate">Salon · {context.name}</span>
+                <span className="min-w-0 truncate">{t('Salon · {name}', { name: context.name })}</span>
                 <AvatarStack members={context.members} size={24} />
               </p>
-              <h1 className="font-display animate-fade-up text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">
-                Les disques
-                <br />
-                qu'on veut.
-              </h1>
-              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>
-                Vos souhaits et vos collections, réunis. Chacun garde sa liste
-                perso, ici on voit tout ensemble.
-              </p>
+              <h1 className="font-display animate-fade-up text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">{t('Les disques')}<br />{t('qu\'on veut.')}</h1>
+              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>{t('Vos souhaits et vos collections, réunis. Chacun garde sa liste perso, ici on voit tout ensemble.')}</p>
               <NowSpinning disc={disc} />
             </>
           ) : isFriend ? (
             <>
               <p className="animate-fade-up mb-4 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.15em] text-ink/70">
                 <Avatar member={context.friend} size={30} className="ring-2 ring-ink/40" />
-                <span className="min-w-0 truncate">Chez un·e ami·e</span>
+                <span className="min-w-0 truncate">{t('Chez un·e ami·e')}</span>
               </p>
-              <h1 className="font-display animate-fade-up break-words text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">
-                Chez
-                <br />
+              <h1 className="font-display animate-fade-up break-words text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">{t('Chez')}<br />
                 {context.friend.name}.
               </h1>
-              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>
-                Ses souhaits et sa collection. Une idée de cadeau, ou un disque à ajouter à ta propre liste.
-              </p>
+              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>{t('Ses souhaits et sa collection. Une idée de cadeau, ou un disque à ajouter à ta propre liste.')}</p>
               <NowSpinning disc={disc} />
             </>
           ) : isMe ? (
             <>
               {/* Sur téléphone, bandeau réduit : titre + pastille du disque sur la platine (le nombre est sur les onglets) */}
-              <p className={`animate-fade-up mb-4 font-mono text-xs uppercase tracking-[0.15em] text-ink/70 ${dense ? 'hidden sm:block' : ''}`}>
-                Ma liste · {context.me.name}
-              </p>
+              <p className={`animate-fade-up mb-4 font-mono text-xs uppercase tracking-[0.15em] text-ink/70 ${dense ? 'hidden sm:block' : ''}`}>{t('Ma liste · {name}', { name: context.me.name })}</p>
               <h1
                 className={`font-display animate-fade-up font-black uppercase leading-[0.84] xl:text-[clamp(9.5rem,10vw,12.5rem)] ${
                   dense ? 'text-[2.6rem] sm:text-[clamp(3.5rem,14vw,9.5rem)]' : 'text-[clamp(3.5rem,14vw,9.5rem)]'
                 }`}
-              >
-                Mes
-                {dense ? <span className="sm:hidden"> </span> : null}
-                <br className={dense ? 'hidden sm:block' : undefined} />
-                disques.
-              </h1>
+              >{t('Mes')}{dense ? <span className="sm:hidden"> </span> : null}<br className={dense ? 'hidden sm:block' : undefined} />{t('disques.')}</h1>
               {dense && (
                 <div className="sm:hidden">
                   <NowChip disc={disc} name={context.me.name} />
@@ -243,25 +221,15 @@ export default function Hero({ count, context, topRight, compact = false, dense 
               <p
                 className={`animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg ${dense ? 'hidden sm:block' : ''}`}
                 style={{ animationDelay: '120ms' }}
-              >
-                Ce que tu veux, ce que tu as déjà. Ta liste te suit dans tous
-                les salons que tu rejoins.
-              </p>
+              >{t('Ce que tu veux, ce que tu as déjà. Ta liste te suit dans tous les salons que tu rejoins.')}</p>
               <div className={dense ? 'hidden sm:block' : undefined}>
                 <NowSpinning disc={disc} />
               </div>
             </>
           ) : (
             <>
-              <h1 className="font-display animate-fade-up text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">
-                Les disques
-                <br />
-                qu'on veut.
-              </h1>
-              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>
-                Ta liste de souhaits et ta collection de vinyles. Rejoins le
-                salon d'un proche pour tout mettre en commun.
-              </p>
+              <h1 className="font-display animate-fade-up text-[clamp(3.5rem,14vw,9.5rem)] xl:text-[clamp(9.5rem,10vw,12.5rem)] font-black uppercase leading-[0.84]">{t('Les disques')}<br />{t('qu\'on veut.')}</h1>
+              <p className="animate-fade-up mt-6 max-w-sm text-ink/80 lg:max-w-md lg:text-lg" style={{ animationDelay: '120ms' }}>{t('Ta liste de souhaits et ta collection de vinyles. Rejoins le salon d\'un proche pour tout mettre en commun.')}</p>
             </>
           )}
         </div>

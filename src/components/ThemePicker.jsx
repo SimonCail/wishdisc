@@ -1,5 +1,6 @@
 import { useTheme } from '../hooks/useTheme'
 import { usePlayer, setSoundEnabled } from '../lib/player'
+import { t } from '../lib/i18n'
 
 export const SunIcon = (p) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -41,11 +42,11 @@ const DAY = { bg: '#f5f1e8', text: '#1b2420', line: '#e2dbc9' }
 const NIGHT = { bg: '#101714', text: '#f0eadd', line: '#2d3833' }
 
 const OPTIONS = [
-  { id: 'light', label: 'Jour', preview: <Preview {...DAY} /> },
-  { id: 'dark', label: 'Nuit', preview: <Preview {...NIGHT} /> },
+  { id: 'light', label: t('Jour'), preview: <Preview {...DAY} /> },
+  { id: 'dark', label: t('Nuit'), preview: <Preview {...NIGHT} /> },
   {
     id: 'system',
-    label: 'Auto',
+    label: t('Auto'),
     preview: (
       <span className="relative block">
         <Preview {...DAY} />
@@ -58,11 +59,11 @@ const OPTIONS = [
 ]
 
 // Réglage dans le profil : Jour / Nuit / Auto
-export function ThemeSettings() {
+export function ThemeSettings({ withSound = true }) {
   const { choice, theme, setChoice } = useTheme()
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Apparence">
+      <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label={t('Apparence')}>
         {OPTIONS.map((o) => {
           const active = choice === o.id
           return (
@@ -85,31 +86,31 @@ export function ThemeSettings() {
       </div>
       <p className="mt-3 text-sm text-muted">
         {choice === 'system'
-          ? `Suit le réglage de ton appareil (en ce moment : ${theme === 'dark' ? 'nuit' : 'jour'}).`
-          : 'Réglage gardé sur cet appareil.'}
+          ? theme === 'dark' ? t('Suit le réglage de ton appareil (en ce moment : nuit).') : t('Suit le réglage de ton appareil (en ce moment : jour).')
+          : t('Réglage gardé sur cet appareil.')}
       </p>
-      <SoundSetting />
+      {withSound && <SoundSetting />}
     </div>
   )
 }
 
 // Son de la platine : écouter les extraits du disque posé sur la platine
-export function SoundSetting() {
+export function SoundSetting({ className = 'mt-6' }) {
   const { enabled } = usePlayer()
   return (
-    <div className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-line p-4">
+    <div className={`flex items-center justify-between gap-4 rounded-2xl border border-line p-4 ${className}`}>
       <div className="min-w-0">
-        <p className="font-medium">Son de la platine</p>
+        <p className="font-medium">{t('Son de la platine')}</p>
         <p className="mt-0.5 text-sm text-muted">
           {enabled
-            ? 'Le disque de ta platine se lance à l’ouverture de l’app, et quand tu en poses un nouveau.'
-            : 'Coupé : la platine tourne en silence.'}
+            ? t('Le disque de ta platine se lance à l’ouverture de l’app, et quand tu en poses un nouveau.')
+            : t('Coupé : la platine tourne en silence.')}
         </p>
       </div>
       <button
         role="switch"
         aria-checked={enabled}
-        aria-label="Son de la platine"
+        aria-label={t('Son de la platine')}
         onClick={() => setSoundEnabled(!enabled)}
         className={`relative h-7 w-12 shrink-0 rounded-full transition ${enabled ? 'bg-accent' : 'bg-raised ring-1 ring-line'}`}
       >
@@ -125,7 +126,7 @@ export function SoundSetting() {
 export function ThemeToggle({ className = '' }) {
   const { theme, toggle } = useTheme()
   const dark = theme === 'dark'
-  const label = dark ? 'Passer en mode jour' : 'Passer en mode nuit'
+  const label = dark ? t('Passer en mode jour') : t('Passer en mode nuit')
   return (
     <button
       onClick={toggle}

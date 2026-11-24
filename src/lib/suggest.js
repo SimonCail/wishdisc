@@ -18,6 +18,7 @@
 // Les résultats Deezer sont gardés 12 h sur l'appareil, les vérifications 14 jours.
 
 import { jsonp, cleanTitle } from './player'
+import { t, tn } from './i18n'
 
 const BASE = 'https://api.discogs.com'
 const token = import.meta.env.VITE_DISCOGS_TOKEN
@@ -114,7 +115,7 @@ async function buildPlan(top) {
   const found = await Promise.allSettled(top.map(([name]) => findArtist(name)))
   const own = found.map((r) => (r.status === 'fulfilled' ? r.value : null)).filter(Boolean)
   if (!own.length) {
-    if (found.some((r) => r.status === 'rejected')) throw new Error('Deezer ne répond pas')
+    if (found.some((r) => r.status === 'rejected')) throw new Error(t('Deezer ne répond pas'))
     return { own: [], near: [], expanded: 0 }
   }
   const rel = await Promise.allSettled(own.map((a) => dz(`/artist/${a.id}/related?limit=25`)))
@@ -160,7 +161,7 @@ const NEAR_PER_BATCH = 5 // artistes proches par fournée
 // Albums par artiste : 2 pour les proches de mes artistes, 3 plus loin (moins de recherches Discogs)
 const albumsFor = (a) => (a.depth > 1 ? 3 : 2)
 
-const reasonFor = (a) => (a.depth > 1 ? `Dans la lignée de ${a.because}` : `Si tu aimes ${a.because}`)
+const reasonFor = (a) => (a.depth > 1 ? t('Dans la lignée de {because}', { because: a.because }) : t('Si tu aimes {because}', { because: a.because }))
 
 // Les albums vinyles d'un artiste sur Discogs, du plus populaire au moins populaire
 // (gardés avec le reste, 12 h)
@@ -184,12 +185,12 @@ async function vinylsOf(m, name) {
     .filter(({ r }) => credit(r) === best)
     .sort((a, b) => popularity(b.r) - popularity(a.r))
     .filter(({ d }) => {
-      const t = coreTitle(d.title) // une seule version de chaque album
-      if (!t || seen.has(t)) return false
-      seen.add(t)
+      const tx = coreTitle(d.title) // une seule version de chaque album
+      if (!tx || seen.has(tx)) return false
+      seen.add(tx)
       return true
     })
-    .map(({ d }) => ({ ...d, artist: d.artist === 'Artiste inconnu' ? name : d.artist }))
+    .map(({ d }) => ({ ...d, artist: d.artist === t('Artiste inconnu') ? name : d.artist }))
   m.vinyls[key] = list
   return list
 }
@@ -207,7 +208,7 @@ async function buildBatch(m, k, isMine = () => false) {
       (await vinylsOf(m, a.name))
         .filter((d) => !isMine(d)) // d'abord retirer ce que j'ai déjà, puis prendre les suivants
         .slice(k * OWN_PER_BATCH, (k + 1) * OWN_PER_BATCH)
-        .map((item) => ({ item, reason: `Un autre album de ${a.name}` }))
+        .map((item) => ({ item, reason: t('Un autre album de {name}', { name: a.name }) }))
     )
   )
   const nearPart = await Promise.allSettled(
@@ -222,7 +223,7 @@ async function buildBatch(m, k, isMine = () => false) {
   )
   const all = [...ownPart, ...nearPart]
   const items = interleave(all.map((r) => (r.status === 'fulfilled' ? r.value : [])))
-  if (!items.length && all.some((r) => r.status === 'rejected')) throw new Error('Discogs ne répond pas')
+  if (!items.length && all.some((r) => r.status === 'rejected')) throw new Error(t('Discogs ne répond pas'))
   const more =
     (k + 1) * NEAR_PER_BATCH < near.length ||
     plan.expanded < near.length || // on peut encore aller plus loin
@@ -280,7 +281,7 @@ async function discogsSearch(params) {
     await budget()
     const res = await fetch(`${BASE}/database/search?${qs}`)
     if (res.ok) return (await res.json()).results || []
-    if (res.status !== 429 || attempt >= 3) throw new Error(`Erreur Discogs (${res.status})`)
+    if (res.status !== 429 || attempt >= 3) throw new Error(t('Erreur Discogs ({status})', { status: res.status }))
     await sleep(5000 * 2 ** attempt)
   }
 }
@@ -290,7 +291,7 @@ function parseDiscogs(it) {
   return {
     discogs_id: it.master_id || it.id,
     discogs_type: it.type === 'master' || it.master_id ? 'master' : 'release',
-    artist: rest.length ? cleanName(credit) : 'Artiste inconnu',
+    artist: rest.length ? cleanName(credit) : t('Artiste inconnu'),
     title: rest.length ? rest.join(' - ') : it.title,
     year: it.year ? String(it.year) : null,
     cover_url: cleanImage(it.cover_image) || cleanImage(it.thumb),
@@ -397,8 +398,8 @@ export function peopleSuggestions(others, myArtists) {
       },
       reason:
         people.length > 1
-          ? `${people[0].name} et ${people.length - 1} autre${people.length > 2 ? 's' : ''} l’ont`
-          : `${people[0].name} ${item.status === 'owned' ? 'l’a' : 'le veut aussi'}`,
+          ? tn(people.length - 1, '{name} et {n} autre l’ont', '{name} et {n} autres l’ont', { name: people[0].name })
+          : item.status === 'owned' ? t('{name} l’a', { name: people[0].name }) : t('{name} le veut aussi', { name: people[0].name }),
       people,
     }))
 }

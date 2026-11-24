@@ -5,6 +5,7 @@ import { SORT_OPTIONS } from '../lib/listUtils'
 import { SearchIcon, CloseIcon, ShareIcon } from './Icons'
 import { Avatar } from './Avatar'
 import SortSelect from './SortSelect'
+import { t } from '../lib/i18n'
 
 const FilterIcon = (p) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9"
@@ -37,13 +38,11 @@ function PeopleChips({ members, meId, person, onPerson, sharedCount }) {
       {members.map((m) => (
         <Chip key={m.id} active={person === m.id} count={m.count} onClick={() => onPerson(person === m.id ? '' : m.id)}>
           <Avatar member={m} size={20} ring={false} className="-ml-1.5" />
-          {m.id === meId ? 'Moi' : m.name}
+          {m.id === meId ? t('Moi') : m.name}
         </Chip>
       ))}
       {sharedCount > 0 && (
-        <Chip active={person === '__shared'} count={sharedCount} onClick={() => onPerson(person === '__shared' ? '' : '__shared')}>
-          En commun
-        </Chip>
+        <Chip active={person === '__shared'} count={sharedCount} onClick={() => onPerson(person === '__shared' ? '' : '__shared')}>{t('En commun')}</Chip>
       )}
     </>
   )
@@ -121,7 +120,7 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials =
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Filtres"
+        aria-label={t('Filtres')}
         className="nice-scroll max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl"
         style={{
           transform: `translateY(${shift})`,
@@ -138,17 +137,15 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials =
         >
         <span aria-hidden="true" className="mx-auto mb-4 block h-1.5 w-10 rounded-full bg-line" />
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-3xl font-black uppercase leading-none">Filtres</h2>
+          <h2 className="font-display text-3xl font-black uppercase leading-none">{t('Filtres')}</h2>
           {hasFilters && (
-            <button onClick={onReset} className="text-sm font-medium text-muted underline-offset-4 hover:text-paper hover:underline">
-              Tout effacer
-            </button>
+            <button onClick={onReset} className="text-sm font-medium text-muted underline-offset-4 hover:text-paper hover:underline">{t('Tout effacer')}</button>
           )}
         </div>
 
         </div>
 
-        <h3 className="mb-2 mt-6 text-sm font-medium text-muted">Trier par</h3>
+        <h3 className="mb-2 mt-6 text-sm font-medium text-muted">{t('Trier par')}</h3>
         <div className="flex flex-wrap gap-2">
           {options.map((o) => (
             <Chip key={o.value} active={sort === o.value} onClick={() => onSort(o.value)}>
@@ -159,7 +156,7 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials =
 
         {genres.length > 0 && (
           <>
-            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">Genre</h3>
+            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">{t('Genre')}</h3>
             <div className="flex flex-wrap gap-2">
               {genres.map((g) => (
                 <Chip key={g.name} active={genre === g.name} count={g.count} onClick={() => onGenre(genre === g.name ? '' : g.name)}>
@@ -172,7 +169,7 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials =
 
         {specials.length > 0 && (
           <>
-            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">Particularités</h3>
+            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">{t('Particularités')}</h3>
             <div className="flex flex-wrap gap-2">
               {specials.map((x) => (
                 <Chip key={x.name} active={special === x.name} count={x.count} onClick={() => onSpecial(special === x.name ? '' : x.name)}>
@@ -185,7 +182,7 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials =
 
         {people && (
           <>
-            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">À qui</h3>
+            <h3 className="mb-2 mt-6 text-sm font-medium text-muted">{t('À qui')}</h3>
             <div className="flex flex-wrap gap-2">{people}</div>
           </>
         )}
@@ -193,9 +190,7 @@ function FilterSheet({ options, sort, onSort, genres, genre, onGenre, specials =
         <button
           onClick={close}
           className="mt-8 w-full rounded-full bg-accent py-3.5 text-sm font-bold text-ink transition hover:bg-accent-soft"
-        >
-          Voir les disques
-        </button>
+        >{t('Voir les disques')}</button>
       </div>
       </div>
     </div>
@@ -212,7 +207,7 @@ export default function ListToolbar({
   search, onSearch, sort, onSort,
   genres = [], genre, onGenre, specials = [], special = '', onSpecial, person, onPerson,
   members, meId, sharedCount = 0, mode,
-  hasFilters, onReset, onShare, shareDisabled = false, placeholder = 'Chercher dans la liste',
+  hasFilters, onReset, onShare, shareDisabled = false, placeholder = t('Chercher dans la liste'),
 }) {
   const [sheet, setSheet] = useState(false)
   // La priorité n'a de sens que pour les souhaits
@@ -237,7 +232,7 @@ export default function ListToolbar({
       {search && (
         <button
           onClick={() => onSearch('')}
-          aria-label="Effacer"
+          aria-label={t('Effacer')}
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted hover:text-paper"
         >
           <CloseIcon width={14} height={14} />
@@ -266,7 +261,7 @@ export default function ListToolbar({
             {search && (
               <button
                 onClick={() => onSearch('')}
-                aria-label="Effacer"
+                aria-label={t('Effacer')}
                 className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:text-paper"
               >
                 <CloseIcon width={15} height={15} />
@@ -275,7 +270,7 @@ export default function ListToolbar({
           </div>
           <button
             onClick={() => setSheet(true)}
-            aria-label={activeCount ? `Filtres (${activeCount} actifs)` : 'Filtres et tri'}
+            aria-label={activeCount ? t('Filtres ({activeCount} actifs)', { activeCount }) : t('Filtres et tri')}
             className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition ${
               activeCount ? 'border-accent bg-accent text-ink' : 'border-line bg-surface text-paper'
             }`}
@@ -292,7 +287,7 @@ export default function ListToolbar({
             <button
               onClick={onShare}
               disabled={shareDisabled}
-              aria-label="Partager la liste"
+              aria-label={t('Partager la liste')}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-paper transition disabled:opacity-40"
             >
               <ShareIcon width={18} height={18} />
@@ -314,7 +309,7 @@ export default function ListToolbar({
             )}
             {person && (
               <Chip active onClick={() => onPerson('')}>
-                {person === '__shared' ? 'En commun' : person === meId ? 'Moi' : members?.find((m) => m.id === person)?.name ?? 'Personne'}{' '}
+                {person === '__shared' ? t('En commun') : person === meId ? t('Moi') : members?.find((m) => m.id === person)?.name ?? t('Personne')}{' '}
                 <CloseIcon width={12} height={12} />
               </Chip>
             )}
@@ -330,9 +325,7 @@ export default function ListToolbar({
         </div>
         {genres.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            <Chip active={!genre} onClick={() => onGenre('')}>
-              Tous les genres
-            </Chip>
+            <Chip active={!genre} onClick={() => onGenre('')}>{t('Tous les genres')}</Chip>
             {genres.map((g) => (
               <Chip key={g.name} active={genre === g.name} count={g.count} onClick={() => onGenre(genre === g.name ? '' : g.name)}>
                 {g.name}
@@ -352,8 +345,7 @@ export default function ListToolbar({
         {showPeople && <div className="flex flex-wrap items-center gap-2">{people}</div>}
         {hasFilters && (
           <button onClick={onReset} className="flex items-center gap-1.5 text-sm text-muted transition hover:text-paper">
-            <CloseIcon width={14} height={14} /> Réinitialiser les filtres
-          </button>
+            <CloseIcon width={14} height={14} />{' '}{t('Réinitialiser les filtres')}</button>
         )}
       </div>
 

@@ -1,3 +1,4 @@
+import { t } from './i18n'
 // Règles des comptes : pseudo, email, mot de passe.
 // Les mêmes règles sont vérifiées par la base (script 13-regles-comptes.sql).
 
@@ -15,16 +16,16 @@ const RESERVED = [
 // Message d'erreur, ou null si le pseudo respecte les règles
 export function pseudoError(raw) {
   const p = (raw ?? '').trim()
-  if (!p) return 'Choisis un pseudo.'
-  if (/\s/.test(p)) return 'Pas d’espace dans le pseudo (tu peux utiliser « _ », « . » ou « - »).'
+  if (!p) return t('Choisis un pseudo.')
+  if (/\s/.test(p)) return t('Pas d’espace dans le pseudo (tu peux utiliser « _ », « . » ou « - »).')
   if (!PSEUDO_RE.test(p)) {
-    if (!new RegExp(`^[${LETTER}0-9]`).test(p)) return 'Le pseudo doit commencer par une lettre ou un chiffre.'
-    return 'Seulement des lettres, des chiffres et « _ », « . » ou « - ».'
+    if (!new RegExp(`^[${LETTER}0-9]`).test(p)) return t('Le pseudo doit commencer par une lettre ou un chiffre.')
+    return t('Seulement des lettres, des chiffres et « _ », « . » ou « - ».')
   }
-  if (p.length < PSEUDO_MIN) return `Au moins ${PSEUDO_MIN} caractères.`
-  if (p.length > PSEUDO_MAX) return `${PSEUDO_MAX} caractères maximum.`
-  if (/^\d+$/.test(p)) return 'Le pseudo ne peut pas contenir que des chiffres.'
-  if (RESERVED.includes(p.toLowerCase())) return 'Ce pseudo est réservé, choisis-en un autre.'
+  if (p.length < PSEUDO_MIN) return t('Au moins {PSEUDO_MIN} caractères.', { PSEUDO_MIN })
+  if (p.length > PSEUDO_MAX) return t('{PSEUDO_MAX} caractères maximum.', { PSEUDO_MAX })
+  if (/^\d+$/.test(p)) return t('Le pseudo ne peut pas contenir que des chiffres.')
+  if (RESERVED.includes(p.toLowerCase())) return t('Ce pseudo est réservé, choisis-en un autre.')
   return null
 }
 
@@ -33,9 +34,9 @@ export function pseudoError(raw) {
 const EMAIL_RE = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/
 export function emailError(raw) {
   const e = (raw ?? '').trim()
-  if (!e) return 'Indique ton email.'
+  if (!e) return t('Indique ton email.')
   if (e.length > 254 || !EMAIL_RE.test(e) || e.includes('..') || e.split('@')[0].length > 64) {
-    return 'Cette adresse email n’est pas valide (exemple : toi@exemple.fr).'
+    return t('Cette adresse email n’est pas valide (exemple : toi@exemple.fr).')
   }
   return null
 }
@@ -69,16 +70,16 @@ export function emailSuggestion(raw) {
 
 // --- Mot de passe ---
 export const PASSWORD_RULES = [
-  { id: 'length', label: '8 caractères minimum', test: (p) => p.length >= 8 },
-  { id: 'upper', label: 'Une majuscule', test: (p) => /[A-ZÀ-Ö]/.test(p) },
-  { id: 'lower', label: 'Une minuscule', test: (p) => /[a-zø-ÿß]/.test(p) },
-  { id: 'digit', label: 'Un chiffre', test: (p) => /\d/.test(p) },
-  { id: 'symbol', label: 'Un symbole (!?@#…)', test: (p) => /[^A-Za-z0-9À-ÖØ-öø-ÿ\s]/.test(p) },
+  { id: 'length', label: t('8 caractères minimum'), test: (p) => p.length >= 8 },
+  { id: 'upper', label: t('Une majuscule'), test: (p) => /[A-ZÀ-Ö]/.test(p) },
+  { id: 'lower', label: t('Une minuscule'), test: (p) => /[a-zø-ÿß]/.test(p) },
+  { id: 'digit', label: t('Un chiffre'), test: (p) => /\d/.test(p) },
+  { id: 'symbol', label: t('Un symbole (!?@#…)'), test: (p) => /[^A-Za-z0-9À-ÖØ-öø-ÿ\s]/.test(p) },
 ]
 export const PASSWORD_MAX = 72 // limite de Supabase
 export function passwordError(p = '') {
-  if (!p) return 'Choisis un mot de passe.'
-  if (p.length > PASSWORD_MAX) return `${PASSWORD_MAX} caractères maximum.`
-  if (/^\s|\s$/.test(p)) return 'Pas d’espace au début ni à la fin du mot de passe.'
-  return PASSWORD_RULES.every((r) => r.test(p)) ? null : 'Le mot de passe ne respecte pas toutes les règles.'
+  if (!p) return t('Choisis un mot de passe.')
+  if (p.length > PASSWORD_MAX) return t('{PASSWORD_MAX} caractères maximum.', { PASSWORD_MAX })
+  if (/^\s|\s$/.test(p)) return t('Pas d’espace au début ni à la fin du mot de passe.')
+  return PASSWORD_RULES.every((r) => r.test(p)) ? null : t('Le mot de passe ne respecte pas toutes les règles.')
 }

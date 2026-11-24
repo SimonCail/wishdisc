@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { t } from '../lib/i18n'
 
 const VIEW = 240 // taille de l'aperçu à l'écran (px)
 const OUTPUT = 640 // taille de l'image envoyée (px)
@@ -82,9 +83,7 @@ export default function PhotoCropper({ file, busy, onConfirm, onCancel }) {
 
   if (failed) {
     return (
-      <div className="rounded-2xl bg-raised p-4 text-sm">
-        Impossible de lire cette image. Essaie une photo en JPEG ou PNG.
-        <button onClick={onCancel} className="ml-2 font-medium underline underline-offset-4">OK</button>
+      <div className="rounded-2xl bg-raised p-4 text-sm">{t('Impossible de lire cette image. Essaie une photo en JPEG ou PNG.')}<button onClick={onCancel} className="ml-2 font-medium underline underline-offset-4">{t('OK')}</button>
       </div>
     )
   }
@@ -112,10 +111,8 @@ export default function PhotoCropper({ file, busy, onConfirm, onCancel }) {
         )}
       </div>
       <div className="flex w-full min-w-0 flex-col gap-3">
-        <p className="text-sm text-muted">Fais glisser la photo pour la placer.</p>
-        <label className="flex items-center gap-3 text-xs font-medium text-muted">
-          Zoom
-          <input
+        <p className="text-sm text-muted">{t('Fais glisser la photo pour la placer.')}</p>
+        <label className="flex items-center gap-3 text-xs font-medium text-muted">{t('Zoom')}<input
             type="range"
             min="1"
             max="3"
@@ -131,15 +128,13 @@ export default function PhotoCropper({ file, busy, onConfirm, onCancel }) {
             onClick={onCancel}
             disabled={busy}
             className="rounded-full border border-line px-4 py-2 text-sm font-medium transition hover:border-accent disabled:opacity-50"
-          >
-            Annuler
-          </button>
+          >{t('Annuler')}</button>
           <button
             onClick={confirm}
             disabled={!img || busy}
             className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-ink transition hover:bg-accent-soft disabled:opacity-50"
           >
-            {busy ? 'Envoi…' : 'Utiliser cette photo'}
+            {busy ? t('Envoi…') : t('Utiliser cette photo')}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { btn } from '../lib/ui'
 import { currentSubscription, disablePush, enablePush, permission, pushAvailability, pushErrorMessage } from '../lib/push'
 import { CloseIcon } from './Icons'
+import { t } from '../lib/i18n'
 
 const BellIcon = (p) => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
@@ -35,17 +36,17 @@ export default function PushSettings({ onToast }) {
     setBusy(false)
     if (res.error) return onToast(pushErrorMessage(res.error), 'error')
     setOn(!on)
-    onToast(on ? 'Notifications désactivées sur cet appareil' : 'Notifications activées')
+    onToast(on ? t('Notifications désactivées sur cet appareil') : t('Notifications activées'))
   }
 
   return (
     <div className="flex items-start gap-3">
       <span className="mt-0.5 text-muted"><BellIcon /></span>
       <div className="min-w-0 flex-1">
-        <p className="font-bold">Sur ce téléphone</p>
+        <p className="font-bold">{t('Sur ce téléphone')}</p>
         <p className="mt-0.5 text-sm text-muted">
           {state === 'ok'
-            ? 'Messages, demandes d’ami et demandes pour rejoindre tes salons, même app fermée.'
+            ? t('Messages, demandes d’ami et demandes pour rejoindre tes salons, même app fermée.')
             : pushErrorMessage(state)}
         </p>
       </div>
@@ -53,7 +54,7 @@ export default function PushSettings({ onToast }) {
         <button
           role="switch"
           aria-checked={!!on}
-          aria-label="Notifications sur cet appareil"
+          aria-label={t('Notifications sur cet appareil')}
           onClick={toggle}
           disabled={busy || on === null}
           className={`relative mt-1 h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${on ? 'bg-accent' : 'bg-line'}`}
@@ -94,7 +95,7 @@ export function PushPrompt({ onToast }) {
     const res = await enablePush()
     if (res.error) return onToast(pushErrorMessage(res.error), 'error')
     setOn(true)
-    onToast('Notifications activées')
+    onToast(t('Notifications activées'))
   }
 
   return (
@@ -104,15 +105,13 @@ export function PushPrompt({ onToast }) {
       </span>
       <p className="min-w-0 flex-1 text-sm">
         {state === 'install'
-          ? 'Pour être prévenu(e) des messages, installe Wishdisc sur l’écran d’accueil (Partager → « Sur l’écran d’accueil »).'
-          : 'Sois prévenu(e) quand un ami t’écrit ou t’ajoute.'}
+          ? t('Pour être prévenu(e) des messages, installe Wishdisc sur l’écran d’accueil (Partager → « Sur l’écran d’accueil »).')
+          : t('Sois prévenu(e) quand un ami t’écrit ou t’ajoute.')}
       </p>
       {state === 'ok' && (
-        <button onClick={enable} className={`${btn.primary} shrink-0 px-4 py-2`}>
-          Activer
-        </button>
+        <button onClick={enable} className={`${btn.primary} shrink-0 px-4 py-2`}>{t('Activer')}</button>
       )}
-      <button onClick={hide} aria-label="Ne plus proposer" className={`${btn.icon} -mr-1 h-9 w-9`}>
+      <button onClick={hide} aria-label={t('Ne plus proposer')} className={`${btn.icon} -mr-1 h-9 w-9`}>
         <CloseIcon width={16} height={16} />
       </button>
     </div>

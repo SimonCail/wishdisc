@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import useVisibleArea from '../hooks/useVisibleArea'
 import SearchPanel, { BarcodeIcon } from './SearchPanel'
 import { CloseIcon, PlusIcon } from './Icons'
+import { t } from '../lib/i18n'
 
 // --- Téléphone : bouton « + » et panneau « Ajouter un disque » ---
 // Les trois façons d'ajouter un disque au même endroit : chercher, scanner, importer.
@@ -26,8 +27,8 @@ export function AddFab({ onClick, disabled }) {
       data-tour="add"
       onClick={onClick}
       disabled={disabled}
-      aria-label="Ajouter un disque"
-      title={disabled ? 'Indisponible hors-ligne' : 'Ajouter un disque'}
+      aria-label={t('Ajouter un disque')}
+      title={disabled ? t('Indisponible hors-ligne') : t('Ajouter un disque')}
       className="fab-in fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-ink shadow-[0_12px_28px_-8px_rgba(0,0,0,0.5)] transition active:scale-95 disabled:opacity-60 md:hidden"
       style={{ bottom: 'calc(max(0.625rem, env(safe-area-inset-bottom)) + 5.25rem)' }}
     >
@@ -128,19 +129,19 @@ export default function AddSheet({ statusOf, onAdd, onGotIt, onError, onScan, on
   // Ce qu'on voit sous le champ avant de chercher
   const options = (
     <div className="mt-6">
-      <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-muted">Ou bien</p>
+      <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-muted">{t('Ou bien')}</p>
       <div className="flex flex-col gap-2.5">
         <Option
           icon={<BarcodeIcon width={22} height={22} />}
-          title="Scanner une pochette"
-          text="Le code-barres au dos du disque"
+          title={t('Scanner une pochette')}
+          text={t('Le code-barres au dos du disque')}
           disabled={offline}
           onClick={() => close(onScan)}
         />
         <Option
           icon={<ImportIcon />}
-          title="Importer depuis Discogs"
-          text="Ta wantlist ou ta collection, d’un coup"
+          title={t('Importer depuis Discogs')}
+          text={t('Ta wantlist ou ta collection, d’un coup')}
           disabled={offline}
           dark
           onClick={() => close(onImport)}
@@ -164,7 +165,7 @@ export default function AddSheet({ statusOf, onAdd, onGotIt, onError, onScan, on
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Ajouter un disque"
+          aria-label={t('Ajouter un disque')}
           className="flex w-full flex-col rounded-t-3xl bg-surface shadow-2xl"
           style={{
             // Avec le clavier : toute la zone visible (le champ en haut, les résultats juste au-dessus du clavier)
@@ -187,10 +188,10 @@ export default function AddSheet({ statusOf, onAdd, onGotIt, onError, onScan, on
           >
             <span aria-hidden="true" className="mx-auto mb-4 block h-1.5 w-10 rounded-full bg-line" />
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-3xl font-black uppercase leading-none">Ajouter un disque</h2>
+              <h2 className="font-display text-3xl font-black uppercase leading-none">{t('Ajouter un disque')}</h2>
               <button
                 onClick={() => close()}
-                aria-label="Fermer"
+                aria-label={t('Fermer')}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-raised hover:text-paper"
               >
                 <CloseIcon width={20} height={20} />

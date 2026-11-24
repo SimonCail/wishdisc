@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
 import { ThemeToggle } from './ThemePicker'
 import { FriendsIcon } from './Friends'
+import { t } from '../lib/i18n'
 
 // --- Icônes de navigation ---
 const base = {
@@ -35,10 +36,10 @@ export const ChatIcon = (p) => (
 )
 
 export const NAV = [
-  { name: 'home', label: 'Ma liste', Icon: RecordIcon },
-  { name: 'rooms', label: 'Salons', Icon: RoomsIcon },
-  { name: 'friends', label: 'Amis', Icon: FriendsIcon },
-  { name: 'messages', label: 'Messages', Icon: ChatIcon },
+  { name: 'home', label: t('Ma liste'), Icon: RecordIcon },
+  { name: 'rooms', label: t('Salons'), Icon: RoomsIcon },
+  { name: 'friends', label: t('Amis'), Icon: FriendsIcon },
+  { name: 'messages', label: t('Messages'), Icon: ChatIcon },
 ]
 // Page → onglet allumé
 export const sectionOf = (route) =>
@@ -79,12 +80,11 @@ export function BrandMark({ size = 32, className = '' }) {
 // Logo : le disque fait un tour à chaque changement de page
 function Logo({ spinKey, onClick }) {
   return (
-    <button onClick={onClick} aria-label="Wishdisc : ma liste" className="group flex items-center gap-2.5">
+    <button onClick={onClick} aria-label={t('Wishdisc : ma liste')} className="group flex items-center gap-2.5">
       <span key={spinKey} className="logo-spin block shrink-0">
         <BrandMark size={32} />
       </span>
-      <span className="font-display text-[1.35rem] font-black uppercase leading-none tracking-tight">
-        Wish<span className="opacity-70">disc</span>
+      <span className="font-display text-[1.35rem] font-black uppercase leading-none tracking-tight">Wish<span className="opacity-70">disc</span>
       </span>
     </button>
   )
@@ -110,7 +110,7 @@ export function TopBar({ section, spinKey, badges, me, onNavigate, onProfile }) 
         <Logo spinKey={spinKey} onClick={() => onNavigate('home')} />
 
         {/* Navigation (ordinateur) */}
-        <nav aria-label="Navigation" className="ml-auto hidden items-center gap-1 md:flex">
+        <nav aria-label={t('Navigation')} className="ml-auto hidden items-center gap-1 md:flex">
           {NAV.map(({ name, label }) => {
             const active = section === name
             return (
@@ -134,8 +134,8 @@ export function TopBar({ section, spinKey, badges, me, onNavigate, onProfile }) 
           <ThemeToggle />
           <button
             onClick={onProfile}
-            aria-label="Mon profil"
-            title="Mon profil"
+            aria-label={t('Mon profil')}
+            title={t('Mon profil')}
             className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-ink/50 transition hover:scale-105 hover:ring-ink"
           >
             <Avatar member={me} size={40} ring={false} className="block" />
@@ -153,7 +153,7 @@ export function TabBar({ section, badges, onNavigate }) {
   const index = Math.max(0, NAV.findIndex((n) => n.name === section))
   return (
     <nav
-      aria-label="Navigation"
+      aria-label={t('Navigation')}
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30 md:hidden"
       style={{
         paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))',

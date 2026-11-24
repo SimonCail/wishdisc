@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
 import { CloseIcon, SearchIcon } from './Icons'
+import { t, tn, locale } from '../lib/i18n'
 
 export const FriendsIcon = (p) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -23,10 +24,10 @@ const ShareLinkIcon = (p) => (
 // « il y a 3 j »
 function ago(iso) {
   const d = (Date.now() - new Date(iso)) / 1000
-  if (d < 3600) return `il y a ${Math.max(1, Math.round(d / 60))} min`
-  if (d < 86400) return `il y a ${Math.round(d / 3600)} h`
-  if (d < 86400 * 30) return `il y a ${Math.round(d / 86400)} j`
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  if (d < 3600) return t('il y a {max} min', { max: Math.max(1, Math.round(d / 60)) })
+  if (d < 86400) return t('il y a {round} h', { round: Math.round(d / 3600) })
+  if (d < 86400 * 30) return t('il y a {round} j', { round: Math.round(d / 86400) })
+  return new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
 }
 
 const smallBtn = 'rounded-full px-3.5 py-1.5 text-xs font-bold transition disabled:opacity-50'
@@ -98,20 +99,18 @@ export default function FriendsPanel({
     const rel = relationOf(person.id)
     if (rel === 'friend') {
       return (
-        <button onClick={() => onOpenFriend(person.id)} className={ghost}>
-          Voir ses disques
-        </button>
+        <button onClick={() => onOpenFriend(person.id)} className={ghost}>{t('Voir ses disques')}</button>
       )
     }
-    if (rel === 'outgoing') return <span className="text-xs text-muted">Demande envoyée</span>
+    if (rel === 'outgoing') return <span className="text-xs text-muted">{t('Demande envoyée')}</span>
     if (rel === 'incoming') {
       return (
         <button
-          onClick={() => run(person.id, () => friends.accept(person.id), `${person.name} et toi êtes amis`)}
+          onClick={() => run(person.id, () => friends.accept(person.id), t('{name} et toi êtes amis', { name: person.name }))}
           disabled={disabled}
           className={primary}
         >
-          {busy === person.id ? '…' : 'Accepter'}
+          {busy === person.id ? '…' : t('Accepter')}
         </button>
       )
     }
@@ -119,13 +118,13 @@ export default function FriendsPanel({
       <button
         onClick={() =>
           run(person.id, () => friends.send(person.id), (r) =>
-            r.status === 'accepted' ? `${person.name} et toi êtes amis` : `Demande envoyée à ${person.name}`
+            r.status === 'accepted' ? t('{name} et toi êtes amis', { name: person.name }) : t('Demande envoyée à {name}', { name: person.name })
           )
         }
         disabled={disabled}
         className={primary}
       >
-        {busy === person.id ? '…' : 'Ajouter'}
+        {busy === person.id ? '…' : t('Ajouter')}
       </button>
     )
   }
@@ -143,8 +142,8 @@ export default function FriendsPanel({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             disabled={offline || friends.missing}
-            placeholder="Trouver quelqu’un par son prénom…"
-            aria-label="Chercher un utilisateur"
+            placeholder={t('Trouver quelqu’un par son prénom…')}
+            aria-label={t('Chercher un utilisateur')}
             autoComplete="off"
             enterKeyHint="search"
             className="w-full rounded-2xl border border-line bg-surface py-4 pl-14 pr-12 text-base shadow-[0_10px_30px_-14px_rgba(27,36,32,0.35)] outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-4 focus:ring-accent/10"
@@ -155,7 +154,7 @@ export default function FriendsPanel({
             query && (
               <button
                 onClick={() => setQuery('')}
-                aria-label="Effacer la recherche"
+                aria-label={t('Effacer la recherche')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-muted hover:bg-raised hover:text-paper"
               >
                 <CloseIcon width={16} height={16} />
@@ -167,7 +166,7 @@ export default function FriendsPanel({
           {searching_ && (searched || results.length > 0) && (
             <div className="animate-pop mt-2 overflow-hidden rounded-2xl border border-line bg-surface p-2 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.5)]">
               {results.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-muted">Personne ne s’appelle « {query.trim()} ».</p>
+                <p className="px-3 py-4 text-sm text-muted">{t('Personne ne s’appelle « {trim} ».', { trim: query.trim() })}</p>
               ) : (
                 <ul>
                   {results.map((p) => (
@@ -187,13 +186,12 @@ export default function FriendsPanel({
             onClick={onInvite}
             className="flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-line bg-surface px-5 py-4 text-sm font-bold transition hover:border-accent"
           >
-            <ShareLinkIcon /> Inviter un ami
-          </button>
+            <ShareLinkIcon />{' '}{t('Inviter un ami')}</button>
         )}
       </div>
 
       {friends.missing && (
-        <p className="rounded-2xl bg-raised px-4 py-3 text-sm">Lance d’abord le script 9-amis.sql dans Supabase.</p>
+        <p className="rounded-2xl bg-raised px-4 py-3 text-sm">{t('Lance d’abord le script 9-amis.sql dans Supabase.')}</p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -201,7 +199,7 @@ export default function FriendsPanel({
       {incoming.length > 0 && (
         <section>
           <h2 className="mb-3 font-display text-2xl font-black uppercase">
-            {incoming.length > 1 ? `${incoming.length} demandes d’ami` : 'Une demande d’ami'}
+            {incoming.length > 1 ? t('{length} demandes d’ami', { length: incoming.length }) : t('Une demande d’ami')}
           </h2>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {incoming.map((p) => (
@@ -212,22 +210,20 @@ export default function FriendsPanel({
                 <Avatar member={p} size={52} ring={false} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display text-xl font-black uppercase leading-tight">{p.name}</p>
-                  <p className="text-xs text-muted">veut être ton ami·e</p>
+                  <p className="text-xs text-muted">{t('veut être ton ami·e')}</p>
                   <div className="mt-2.5 flex gap-1.5">
                     <button
-                      onClick={() => run(p.id, () => friends.accept(p.id), `${p.name} et toi êtes amis`)}
+                      onClick={() => run(p.id, () => friends.accept(p.id), t('{name} et toi êtes amis', { name: p.name }))}
                       disabled={disabled}
                       className={primary}
                     >
-                      {busy === p.id ? '…' : 'Accepter'}
+                      {busy === p.id ? '…' : t('Accepter')}
                     </button>
                     <button
-                      onClick={() => run(p.id, () => friends.remove(p.id), 'Demande refusée')}
+                      onClick={() => run(p.id, () => friends.remove(p.id), t('Demande refusée'))}
                       disabled={disabled}
                       className={ghost}
-                    >
-                      Refuser
-                    </button>
+                    >{t('Refuser')}</button>
                   </div>
                 </div>
               </li>
@@ -239,8 +235,7 @@ export default function FriendsPanel({
       {/* --- Mes amis : une « pochette » par ami --- */}
       <section>
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-2xl font-black uppercase">
-            Mes amis <span className="text-muted">{list.length || ''}</span>
+          <h2 className="font-display text-2xl font-black uppercase">{t('Mes amis')}{' '}<span className="text-muted">{list.length || ''}</span>
           </h2>
         </div>
 
@@ -250,21 +245,15 @@ export default function FriendsPanel({
               <span className="vinyl-disc absolute left-0 top-2 h-20 w-20 animate-disc" style={{ '--disc-label': '#f09aaa' }} />
               <span className="vinyl-disc absolute right-0 top-2 h-20 w-20 animate-disc" style={{ '--disc-label': '#6aa6d6' }} />
             </div>
-            <p className="mt-4 font-display text-3xl font-black uppercase leading-none">Les disques, c’est mieux à plusieurs</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-              Ajoute tes proches pour voir ce qu’ils veulent, ce qu’ils ont déjà, et ne plus jamais offrir un disque en double.
-            </p>
+            <p className="mt-4 font-display text-3xl font-black uppercase leading-none">{t('Les disques, c’est mieux à plusieurs')}</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted">{t('Ajoute tes proches pour voir ce qu’ils veulent, ce qu’ils ont déjà, et ne plus jamais offrir un disque en double.')}</p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               <button
                 onClick={() => inputRef.current?.focus()}
                 className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-ink transition hover:bg-accent-soft"
-              >
-                Chercher un prénom
-              </button>
+              >{t('Chercher un prénom')}</button>
               {onInvite && (
-                <button onClick={onInvite} className="rounded-full border border-line px-5 py-2.5 text-sm font-medium transition hover:border-accent">
-                  Envoyer le lien de l’app
-                </button>
+                <button onClick={onInvite} className="rounded-full border border-line px-5 py-2.5 text-sm font-medium transition hover:border-accent">{t('Envoyer le lien de l’app')}</button>
               )}
             </div>
           </div>
@@ -275,18 +264,16 @@ export default function FriendsPanel({
               if (confirmRemove === p.id) {
                 return (
                   <li key={p.id} className="animate-pop flex flex-col justify-center gap-3 rounded-3xl border border-line bg-surface p-5">
-                    <p className="text-sm">Retirer {p.name} de tes amis ? Vous ne verrez plus vos disques.</p>
+                    <p className="text-sm">{t('Retirer {name} de tes amis ? Vous ne verrez plus vos disques.', { name: p.name })}</p>
                     <div className="flex gap-1.5">
-                      <button onClick={() => setConfirmRemove(null)} className={ghost}>Annuler</button>
+                      <button onClick={() => setConfirmRemove(null)} className={ghost}>{t('Annuler')}</button>
                       <button
                         onClick={async () => {
-                          if (await run(p.id, () => friends.remove(p.id), `${p.name} ne fait plus partie de tes amis`)) setConfirmRemove(null)
+                          if (await run(p.id, () => friends.remove(p.id), t('{name} ne fait plus partie de tes amis', { name: p.name }))) setConfirmRemove(null)
                         }}
                         disabled={disabled}
                         className={`${smallBtn} bg-red-500 text-white hover:bg-red-400`}
-                      >
-                        Retirer
-                      </button>
+                      >{t('Retirer')}</button>
                     </div>
                   </li>
                 )
@@ -298,7 +285,7 @@ export default function FriendsPanel({
                     onClick={() => onOpenFriend(p.id)}
                     className="relative block h-32 w-full overflow-hidden text-left"
                     style={{ background: `color-mix(in oklab, ${p.color || '#ec5b3e'} 35%, var(--color-surface))` }}
-                    aria-label={`Voir les disques de ${p.name}`}
+                    aria-label={t('Voir les disques de {name}', { name: p.name })}
                   >
                     <span
                       aria-hidden="true"
@@ -326,14 +313,14 @@ export default function FriendsPanel({
                       <button onClick={() => onOpenFriend(p.id)} className="min-w-0 text-left">
                         <p className="truncate font-display text-2xl font-black uppercase leading-tight">{p.name}</p>
                         <p className="mt-0.5 text-sm text-muted">
-                          {st.wish} souhait{st.wish > 1 ? 's' : ''} · {st.owned} en collection
+                          {tn(st.wish, '{n} souhait', '{n} souhaits')} · {t('{n} en collection', { n: st.owned })}
                         </p>
                       </button>
                       <button
                         onClick={() => setConfirmRemove(p.id)}
                         disabled={disabled}
-                        aria-label={`Retirer ${p.name} de mes amis`}
-                        title="Retirer de mes amis"
+                        aria-label={t('Retirer {name} de mes amis', { name: p.name })}
+                        title={t('Retirer de mes amis')}
                         className="shrink-0 rounded-full p-1.5 text-muted opacity-60 transition hover:bg-raised hover:text-paper hover:opacity-100"
                       >
                         <CloseIcon width={16} height={16} />
@@ -342,16 +329,12 @@ export default function FriendsPanel({
                     {st.common > 0 && (
                       <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-raised px-3 py-1 text-xs">
                         <span className="keep-day h-2 w-2 rounded-full bg-sun" />
-                        {st.common} disque{st.common > 1 ? 's' : ''} en commun avec toi
+                        {tn(st.common, '{n} disque en commun avec toi', '{n} disques en commun avec toi')}
                       </p>
                     )}
                     <div className="mt-4 flex gap-2">
-                      <button onClick={() => onMessage(p.id)} className={`${primary} flex-1 py-2`}>
-                        Écrire
-                      </button>
-                      <button onClick={() => onOpenFriend(p.id)} className={`${ghost} flex-1 py-2`}>
-                        Ses disques
-                      </button>
+                      <button onClick={() => onMessage(p.id)} className={`${primary} flex-1 py-2`}>{t('Écrire')}</button>
+                      <button onClick={() => onOpenFriend(p.id)} className={`${ghost} flex-1 py-2`}>{t('Ses disques')}</button>
                     </div>
                   </div>
                 </li>
@@ -364,7 +347,7 @@ export default function FriendsPanel({
       {/* --- Du nouveau chez tes amis --- */}
       {activity.length > 0 && (
         <section>
-          <h2 className="mb-4 font-display text-2xl font-black uppercase">Du nouveau chez tes amis</h2>
+          <h2 className="mb-4 font-display text-2xl font-black uppercase">{t('Du nouveau chez tes amis')}</h2>
           <ul className="no-scrollbar -mx-5 flex snap-x scroll-px-5 gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0">
             {activity.map(({ vinyl, friend }) => (
               <li key={vinyl.id} className="w-40 shrink-0 snap-start sm:w-44">
@@ -383,7 +366,7 @@ export default function FriendsPanel({
                   </span>
                   <span className="mt-3 block truncate text-sm font-bold">{vinyl.title}</span>
                   <span className="block truncate text-xs text-muted">
-                    {friend.name} · {vinyl.status === 'owned' ? 'l’a eu' : 'le veut'} · {ago(vinyl.owned_at || vinyl.created_at)}
+                    {vinyl.status === 'owned' ? t('{name} l’a eu', { name: friend.name }) : t('{name} le veut', { name: friend.name })} · {ago(vinyl.owned_at || vinyl.created_at)}
                   </span>
                 </button>
               </li>
@@ -395,17 +378,17 @@ export default function FriendsPanel({
       {/* --- Demandes envoyées --- */}
       {outgoing.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-medium text-muted">En attente de réponse</h2>
+          <h2 className="mb-3 text-sm font-medium text-muted">{t('En attente de réponse')}</h2>
           <ul className="flex flex-wrap gap-2">
             {outgoing.map((p) => (
               <li key={p.id} className="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-1.5">
                 <Avatar member={p} size={30} ring={false} />
                 <span className="text-sm font-medium">{p.name}</span>
                 <button
-                  onClick={() => run(p.id, () => friends.remove(p.id), 'Demande annulée')}
+                  onClick={() => run(p.id, () => friends.remove(p.id), t('Demande annulée'))}
                   disabled={disabled}
-                  aria-label={`Annuler la demande à ${p.name}`}
-                  title="Annuler la demande"
+                  aria-label={t('Annuler la demande à {name}', { name: p.name })}
+                  title={t('Annuler la demande')}
                   className="rounded-full p-1 text-muted hover:bg-raised hover:text-paper"
                 >
                   <CloseIcon width={14} height={14} />

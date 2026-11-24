@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { avatarUrl } from '../lib/avatar'
+import { t, currentLang } from '../lib/i18n'
 
 // Pastille ronde : la photo (ou l'artiste choisi), sinon l'initiale dans sa couleur
 // (initiale toujours foncée : les couleurs d'avatar sont claires, de jour comme de nuit)
@@ -58,14 +59,16 @@ export function AvatarStack({ members, size = 28, max = 4, className = '' }) {
   )
 }
 
-// "Camille", "Toi et Camille", "Vous trois"…
-export function namesLabel(members, meId) {
-  if (members.length === 1) return members[0].id === meId ? 'Toi' : members[0].name
+// "Camille", "Toi et Camille", "Vous trois"…  (lower : « toi » en minuscule, au milieu d'une phrase)
+export function namesLabel(members, meId, lower = false) {
+  if (members.length === 1) return members[0].id === meId ? (lower ? t('toi') : t('Toi')) : members[0].name
   if (members.length === 2) {
     const other = members.find((m) => m.id !== meId)
     return members.some((m) => m.id === meId)
-      ? `Toi et ${other.name}`
-      : `${members[0].name} et ${members[1].name}`
+      ? lower ? t('toi et {name}', { name: other.name }) : t('Toi et {name}', { name: other.name })
+      : t('{a} et {b}', { a: members[0].name, b: members[1].name })
   }
-  return `Vous ${['', '', 'deux', 'trois', 'quatre', 'cinq'][members.length] || members.length}`
+  // En français : « vous trois » ; ailleurs, le chiffre
+  const n = currentLang() === 'fr' ? ['', '', 'deux', 'trois', 'quatre', 'cinq'][members.length] || members.length : members.length
+  return lower ? t('vous {n}', { n }) : t('Vous {n}', { n })
 }

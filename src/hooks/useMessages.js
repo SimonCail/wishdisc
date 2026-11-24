@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { t } from '../lib/i18n'
 
 const LIMIT = 1000
 // Du plus ancien au plus récent
@@ -8,11 +9,11 @@ const byDate = (list) => [...list].sort((a, b) => new Date(a.created_at) - new D
 function messageError(error) {
   const msg = error?.message || ''
   if (error?.code === '42P01' || /messages.*does not exist|could not find the table/i.test(msg)) {
-    return 'Lance d’abord le script 10-messages.sql dans Supabase.'
+    return t('Lance d’abord le script 10-messages.sql dans Supabase.')
   }
-  if (/row-level security/i.test(msg)) return 'Vous devez être amis pour vous écrire.'
-  if (!navigator.onLine) return 'Pas de connexion internet.'
-  return msg || 'Message non envoyé.'
+  if (/row-level security/i.test(msg)) return t('Vous devez être amis pour vous écrire.')
+  if (!navigator.onLine) return t('Pas de connexion internet.')
+  return msg || t('Message non envoyé.')
 }
 
 // Ce qu'on garde d'un disque partagé dans un message
@@ -172,7 +173,7 @@ export function useMessages(userId) {
     const { error } = await supabase.rpc('clear_conversation', { other: otherId })
     if (error) {
       if (error.code === 'PGRST202' || /clear_conversation/.test(error.message || '')) {
-        return { error: 'Lance d’abord le script 16-conversations.sql dans Supabase.' }
+        return { error: t('Lance d’abord le script 16-conversations.sql dans Supabase.') }
       }
       return { error: messageError(error) }
     }

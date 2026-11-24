@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { readJSON, writeJSON } from '../lib/cache'
+import { t, compareText } from '../lib/i18n'
 
 const FRIENDS_KEY = 'vinyl-wishlist-friends-v1'
 const PROFILE_COLS = ['id, name, color, avatar_path, avatar_url, avatar_label', 'id, name, color, avatar_path']
@@ -8,17 +9,17 @@ const PROFILE_COLS = ['id, name, color, avatar_path, avatar_url, avatar_label', 
 function friendMessage(error) {
   if (!error) return null
   const msg = error.message || ''
-  if (msg.includes('cannot_friend_self')) return 'C’est toi !'
-  if (msg.includes('user_not_found')) return 'Ce compte n’existe plus.'
-  if (msg.includes('request_not_found')) return 'Cette demande n’existe plus.'
+  if (msg.includes('cannot_friend_self')) return t('C’est toi !')
+  if (msg.includes('user_not_found')) return t('Ce compte n’existe plus.')
+  if (msg.includes('request_not_found')) return t('Cette demande n’existe plus.')
   if (
     error.code === 'PGRST202' || error.code === '42883' || error.code === '42P01' ||
     /could not find the (function|table)|does not exist|friendships/i.test(msg)
   ) {
-    return 'Lance d’abord le script 9-amis.sql dans Supabase.'
+    return t('Lance d’abord le script 9-amis.sql dans Supabase.')
   }
-  if (!navigator.onLine) return 'Pas de connexion internet.'
-  return msg || 'Ça n’a pas marché, réessaie.'
+  if (!navigator.onLine) return t('Pas de connexion internet.')
+  return msg || t('Ça n’a pas marché, réessaie.')
 }
 
 // Mes amis, les demandes reçues et envoyées.
@@ -68,7 +69,7 @@ export function useFriends(userId) {
       else if (l.addressee === userId) next.incoming.push(person)
       else next.outgoing.push(person)
     }
-    const byName = (a, b) => a.name.localeCompare(b.name, 'fr')
+    const byName = (a, b) => compareText(a.name, b.name)
     next.friends.sort(byName)
     next.incoming.sort((a, b) => new Date(b.since) - new Date(a.since))
     next.outgoing.sort(byName)

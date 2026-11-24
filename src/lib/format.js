@@ -1,4 +1,5 @@
-const euro = new Intl.NumberFormat('fr-FR', {
+import { locale } from './i18n'
+const euro = new Intl.NumberFormat(locale(), {
   style: 'currency',
   currency: 'EUR',
 })
